@@ -21,15 +21,18 @@ Then you carry your removable drive to your other computer(s), synchronise with 
 It is designed to be more flexible than other syncing solutions.
 
 Advantages
+
  - It's robust. It detects forked versions and handles every mistake, error and edge case I found or I could think of.
- - It's flexible. It syncs any set of files/folders you like, instead of watching a single folder as some alternative solutions do.
+ - It's flexible. It syncs any set of files/folders you like, instead of watching a single folder as some alternatives do.
  - You control it. You control and own both the removable drive "server" and the connection to it.
 
 Since this is a new project, it'll probably need time to earn your trust before you let it loose on your important data. Until then you should note:
+
  - with option -i it has an interactive mode. It gets permission with "y/n?" before every rsync or rm.
  - with option -p it has a pretend mode. Writes nothing to disk at all.
  - by default it keeps two backups to every sync, using rsync's -b --backup-dir options.
  - with option -v it has a verbose mode
+ - 
 and of course you can check the code yourself.
 
 
