@@ -74,7 +74,7 @@ Next the program reads "/home/personal/pictures" and synchronises that folder wi
 Mike now synchronises with his home PC. 
 The locations-list file is "syncLocationsOn_mikePC" and contains  
  - /home/pictures  
- - 
+
 Which ensures that "/home/pictures" is kept in sync with the folder "/home/personal/pictures" on his laptop.
 
 There is a diagram for this example.
