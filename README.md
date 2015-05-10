@@ -2,6 +2,7 @@
 linux bash script for synchronising computers over an air-gap
 
 ------------CONTENTS------------
+
 1. OVERVIEW
 2. USING HOLDALL
   - overview
