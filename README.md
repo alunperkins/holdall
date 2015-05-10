@@ -173,17 +173,21 @@ The data to describe the state of syncs and updates is in syncStatus. It's defin
 
 When an item is synced with a host this line is updated with the current time.
 The other type has an entry for each item and lists hosts with the latest changes. It has the format:
-<item name> UPTODATEHOSTS <hostname 1> <hostname 2> <(...etc.)>
+
+[item name] UPTODATEHOSTS [hostname 1] [hostname 2] [(...etc.)]
+
 If the removable drive version was just copied to the host, the host is added to the list of hosts that have the latest version.
 If the host version was just copied to the removable drive, all other hosts are removed from the list and only the current host has the latest version.
 The dates of synchronisations, the list of hosts with the latest version, and the modification times of files, can be combined to determine if a mistake has been made including if a file/folder has been forked. I think this is the minimum information necessary.
 
 The log is kept in syncLog. The format is
-<date>,<time>, <HOSTNAME>, <path to source of copy>, copied to, <path to dest of copy>, rsync exit status=<number>.
+
+[date],[time], [HOSTNAME], [path to source of copy], copied to, [path to dest of copy], rsync exit status=[number]
+
 and it is capped at 500 lines long.
 It's not ever consulted by the program, it just exists. I don't think it will ever be needed, but may be useful if there's confusion caused by an unwriteable file or something. Or just if someone gets in a real mess and wants to know the history of how an updated version of something was distributed to their computers.
 
-By default the rsync command sets the -b and --backup-dir options to keep two backups. The file/folder name is given a suffix "-removed-<date and time>~" (note the tilde at the end). These backups are not synchronised with anywhere else. There is no facilty for restoring from a backup, it would have to be done manually. These are just a safety net; I've never used them.
+By default the rsync command sets the -b and --backup-dir options to keep two backups. The file/folder name is given a suffix "-removed-[date and time]~" (note the tilde at the end). These backups are not synchronised with anywhere else. There is no facilty for restoring from a backup, it would have to be done manually. These are just a safety net; I've never used them.
 
 When syncing modification times are preserved. I find that if my computers use ext4 and my removable drive uses FAT32 there is some funny-looking behaviour because it will syncronise mod times of files even if their contents are identical. It's best to use the same filesystem on your disks.
 
