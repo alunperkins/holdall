@@ -106,32 +106,52 @@ $ bash holdall /media/thumbdrive/holdallFolder
 If you're running for the first time, or a new host, it will initialise some files and print some simple instructions for editing your locations-list file. 
 
 It has command-line options for showing the help
+
   -h
+  
   --help
+  
 and options for dealing with the location-list file
+
   -l	list mode: show what you're syncing and what's on the drive (does not synchronise)
+  
   -s	(takes an argument) appends its argument to your locations-list file, e.g. "-s /home/docs" appends "/home/docs" to your locations-list file.
+  
   -f	(takes an argument) specify a locations-list file to use other than the usual/default one.
+  
 and options for supervising the program if there's a problem or if you're being cautious
+
   -i	run in interactive mode - user approves or refuses each rsync and rm command individually with "y/n?" dialogs.
+  
   -p	run in pretend mode - do not write to disk, only pretend to. Use to preview the program.
+  
   -v	run in verbose mode - display extra messages.
+  
   -b    (takes an argument) after copying with rsync keep a custom number of backups (default is 2). If the argument is "0" it keeps no backups (and deletes existing backups).
+  
 and an option to force it to run
+
   -a	run in automatic mode - no dialogs (interactive mode overrides this).
+  
 
  
-
-
 
 ------------3. QUICK START------------
 
 Holdall takes one argument - the path to the syncing directory on the removable drive.
-Run it once to initialise some files. For example let's say you're using the folder mounted at /media/thumbdrive/holdallFolder.
+
+Run it once to initialise some files. For example let's say you're using the folder mounted at
+
+/media/thumbdrive/holdallFolder.
+
 $ bash holdall /media/thumbdrive/holdallFolder
+
 Follow the prompts. It will create a template locations-list file and tell you where it is. Use any text editor to put into it the locations of files/folders you want to sync. Put each location on a separate line. See "using holdall" for help with understanding the locations-list files.
+
 Run it again to sync. 
+
 $ bash holdall /media/thumbdrive/holdallFolder
+
 Carry to other your computers and repeat.
 
 
