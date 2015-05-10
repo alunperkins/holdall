@@ -165,7 +165,7 @@ Don't be dismayed at the script's approximately 1000 lines. The core functionali
 
 The program keeps two data/log files and a set of locations-list files. They go in the folder it uses on the removable drive.
 
-The locations-list files are called syncLocationsOn_<HOSTNAME>. It's meant to be edited by the user. The program finds the one for the current host and it uses a "while read line" loop to deal with each path in the file. If two paths point to files/folders with the same name (e.g. /home/user/Documents/PDFs/ and /home/user/Downloads/PDFs/) then one must be given an alternate name (using a | in its entry in the locations-list file) to avoid clashing in the removable drive directory.
+The locations-list files are called syncLocationsOn_[HOSTNAME]. It's meant to be edited by the user. The program finds the one for the current host and it uses a "while read line" loop to deal with each path in the file. If two paths point to files/folders with the same name (e.g. /home/user/Documents/PDFs/ and /home/user/Downloads/PDFs/) then one must be given an alternate name (using a | in its entry in the locations-list file) to avoid clashing in the removable drive directory.
 
 The data to describe the state of syncs and updates is in syncStatus. It's definitely not meant to be edited by the user (though if needed the program can heal damage to this file). There are two types of line in syncStatus. One type has an entry for each item and each host, and records the times when each host most recently synced each item. It has the format:
 
