@@ -2,6 +2,7 @@
 linux bash script for synchronising computers over an air-gap
 
 ------------------------CONTENTS------------------------
+=======
 
 1. OVERVIEW
 2. USING HOLDALL
@@ -14,6 +15,7 @@ linux bash script for synchronising computers over an air-gap
 
 
 ------------------------1. OVERVIEW------------------------
+=======
 
 Holdall is a smart bash script for synchronising computers over an air gap.
 You give a list of files/folders and it automates the process of synchronising them with a removable drive.
