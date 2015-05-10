@@ -21,7 +21,7 @@ Since this is a new project, it'll probably need time to earn your trust before 
  - with option -p it has a pretend mode. Writes nothing to disk at all.
  - by default it keeps two backups to every sync, using rsync's -b --backup-dir options.
  - with option -v it has a verbose mode  
- - 
+
 and of course you can check the code yourself.
 
 
@@ -67,8 +67,8 @@ For his laptop the locations-list file is syncLocationsOn_mikeLaptop and it cont
  - /home/personal/pictures  
 
 First the program reads "/home/work/reports" and synchronises that folder with "reports" on the removable drive.
-Next the program reads "/home/work/docs" and synchronises that folder with "docs" on the removable drive.
-Now his laptop and work PC are synchronised, and between them he's free to use a different directory tree and a different name for his documents folder.
+Next the program reads "/home/work/docs" and synchronises that folder with "docs" on the removable drive.  
+Now his laptop and work PC are synchronised, and between them he's free to use a different directory tree and a different name for his documents folder.  
 Next the program reads "/home/personal/pictures" and synchronises that folder with "pictures" on the removable drive.
 
 Mike now synchronises with his home PC. 
@@ -90,15 +90,18 @@ If you're running for the first time, or a new host, it will initialise some fil
 It has command-line options for showing the help  
  - -h
  - --help  
+ - 
 and options for dealing with the location-list file  
  - -l	list mode: show what you're syncing and what's on the drive (does not synchronise)
  - -s	(takes an argument) appends its argument to your locations-list file, e.g. "-s /home/docs" appends "/home/docs" to your locations-list file.
  - -f	(takes an argument) specify a locations-list file to use other than the usual/default one.  
+ - 
 and options for supervising the program if there's a problem or if you're being cautious  
  - -i	run in interactive mode - user approves or refuses each rsync and rm command individually with "y/n?" dialogs.
  - -p	run in pretend mode - do not write to disk, only pretend to. Use to preview the program.
  - -v	run in verbose mode - display extra messages.
  - -b    (takes an argument) after copying with rsync keep a custom number of backups (default is 2). If the argument is "0" it keeps no backups (and deletes existing backups).  
+ - 
 and an option to force it to run  
  - -a	run in automatic mode - no dialogs (interactive mode overrides this).  
 
