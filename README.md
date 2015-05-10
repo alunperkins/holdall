@@ -67,9 +67,7 @@ First the program reads "/home/reports/" and synchronises "/home/reports" with "
 Next the program reads "/home/My Documents|docs" and synchronises "/home/My Documents" with "docs" on the removable drive.
 
 Mike also has a computer at home (hostname mikePC) and a laptop (hostname mikeLaptop). 
-
 Mike now plugs his removable drive into his laptop and synchronises with it.
-
 For his laptop the locations-list file is syncLocationsOn_mikeLaptop and it contains
 
  - /home/work/reports
@@ -83,7 +81,6 @@ Now his laptop and work PC are synchronised, and between them he's free to use a
 Next the program reads "/home/personal/pictures" and synchronises that folder with "pictures" on the removable drive.
 
 Mike now synchronises with his home PC. 
-
 The locations-list file is "syncLocationsOn_mikePC" and contains
 
  - /home/pictures
