@@ -21,6 +21,7 @@ Since this is a new project, it'll probably need time to earn your trust before 
  - with option -p it has a pretend mode. Writes nothing to disk at all.
  - by default it keeps two backups to every sync, using rsync's -b --backup-dir options.
  - with option -v it has a verbose mode  
+ - 
 and of course you can check the code yourself.
 
 
@@ -54,6 +55,7 @@ A user, Mike, synchronises his work computer (hostname employee297) with the rem
 The locations-list file is "syncLocationsOn_employee297" and contains two lines:  
  - /home/reports
  - /home/My Documents|docs  
+
 First the program reads "/home/reports/" and synchronises "/home/reports" with "reports" on the removable drive.
 Next the program reads "/home/My Documents|docs" and synchronises "/home/My Documents" with "docs" on the removable drive.
 
@@ -63,6 +65,7 @@ For his laptop the locations-list file is syncLocationsOn_mikeLaptop and it cont
  - /home/work/reports
  - /home/work/docs
  - /home/personal/pictures  
+
 First the program reads "/home/work/reports" and synchronises that folder with "reports" on the removable drive.
 Next the program reads "/home/work/docs" and synchronises that folder with "docs" on the removable drive.
 Now his laptop and work PC are synchronised, and between them he's free to use a different directory tree and a different name for his documents folder.
@@ -71,6 +74,7 @@ Next the program reads "/home/personal/pictures" and synchronises that folder wi
 Mike now synchronises with his home PC. 
 The locations-list file is "syncLocationsOn_mikePC" and contains  
  - /home/pictures  
+ - 
 Which ensures that "/home/pictures" is kept in sync with the folder "/home/personal/pictures" on his laptop.
 
 There is a diagram for this example.
@@ -148,9 +152,9 @@ By default the rsync command sets the -b and --backup-dir options to keep two ba
 
 When syncing modification times are preserved. I find that if my computers use ext4 and my removable drive uses FAT32 there is some funny-looking behaviour because it will syncronise mod times of files even if their contents are identical. It's best to use the same filesystem on your disks.
 
-FUTURE WORK?
-In future may want to implement:
-  - detect and handle if user tries to sync a folder and its subfolder as separate items. It works but wastes disk space.
+FUTURE WORK?  
+In future may want to implement:  
+ - detect and handle if user tries to sync a folder and its subfolder as separate items. It works but wastes disk space.
  - override rsync's default way of handling  symbolic links.
  - some way to set it to run automatically (e.g. timer)? Currently syncs only when specifically run by user.
  - create a GUI front-end.
