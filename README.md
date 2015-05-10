@@ -39,10 +39,15 @@ and of course you can check the code yourself.
 ----Overview----
 
 Syncing with a removable drive works in the usual way. You modify your file/folder on a computer and when you're done you sync to the removable drive. It knows that you were working from the latest version, and it detects that you've made a change. It then copies the host version onto the removable drive. Then you move to another computer and sync again. 
+
 Holdall checks that you haven't forked the file/folder between this computer and the previous one (let's say you haven't), and then copies the removable drive version onto the host. Then your two computers  have identical versions of the data, and you resume working. 
+
 Of course, you could just do this yourself, but if you have a lot of different things you want to sync then that could get cumbersome and error-prone. Holdall will help by automating things and by automatically detecting if you have conflicting changes, etc.
 
-Holdall is run with one argument - the path to the sync folder on the removable drive. You don't have give locations of the files/folders you're syncing each time, they are saved in a locations-list file that you edit. There's a locations-list file for each computer, called "syncLocationsOn_HOSTNAME" where HOSTNAME is the computer's name. When you run holdall on a host, if finds the locations-list file with your hostname, and works its way down the list of locations. For each one it looks on your computer for the file/folder and in the removable drive's sync folder for a file/folder with the same name. Then it decides if your latest work is on the host or the removable drive, and then uses rsync to copy the recent version to the older version.
+Holdall is run with one argument - the path to the sync folder on the removable drive. You don't have give locations of the files/folders you're syncing each time, they are saved in a locations-list file that you edit. There's a locations-list file for each computer, called "syncLocationsOn_HOSTNAME" where HOSTNAME is the computer's name. 
+
+When you run holdall on a host, if finds the locations-list file with your hostname, and works its way down the list of locations. For each one it looks on your computer for the file/folder and in the removable drive's sync folder for a file/folder with the same name. Then it decides if your latest work is on the host or the removable drive, and then uses rsync to copy the recent version to the older version.
+
 Using locations-list files lets you sync folders to different locations, if your computers have different directory structures, and lets you choose what to sync, if you're sharing some things across some computers but not others. You can also sync files/folders to have the same data but have different names on each computer.
 
 ----Understanding the locations-list file(s) with an example----
@@ -51,27 +56,41 @@ Inside a locations-list file are locations of folders/files, one per line.
 To copy a folder/file to a different name you can give the alternate name after a "|" delimiter.
 
 Take an example. 
+
 A user, Mike, synchronises his work computer (hostname employee297) with the removable drive.
 The locations-list file is "syncLocationsOn_employee297" and contains two lines:
+
  /home/reports
+ 
  /home/My Documents|docs
+ 
 First the program reads "/home/reports/" and synchronises "/home/reports" with "reports" on the removable drive.
 Next the program reads "/home/My Documents|docs" and synchronises "/home/My Documents" with "docs" on the removable drive.
 
 Mike also has a computer at home (hostname mikePC) and a laptop (hostname mikeLaptop). 
+
 Mike now plugs his removable drive into his laptop and synchronises with it.
+
 For his laptop the locations-list file is syncLocationsOn_mikeLaptop and it contains
+
  /home/work/reports
+ 
  /home/work/docs
+ 
  /home/personal/pictures
+ 
 First the program reads "/home/work/reports" and synchronises that folder with "reports" on the removable drive.
 Next the program reads "/home/work/docs" and synchronises that folder with "docs" on the removable drive.
 Now his laptop and work PC are synchronised, and between them he's free to use a different directory tree and a different name for his documents folder.
+
 Next the program reads "/home/personal/pictures" and synchronises that folder with "pictures" on the removable drive.
 
 Mike now synchronises with his home PC. 
+
 The locations-list file is "syncLocationsOn_mikePC" and contains
+
  /home/pictures
+ 
 Which ensures that "/home/pictures" is kept in sync with the folder "/home/personal/pictures" on his laptop.
 
 There is a diagram for this example.
@@ -79,8 +98,11 @@ There is a diagram for this example.
 ----Running holdall----
 
 Holdall takes one argument - the path to the syncing directory on the removable drive.
+
 For example let's say you're using the folder mounted at /media/thumbdrive/holdallFolder.
+
 $ bash holdall /media/thumbdrive/holdallFolder
+
 If you're running for the first time, or a new host, it will initialise some files and print some simple instructions for editing your locations-list file. 
 
 It has command-line options for showing the help
