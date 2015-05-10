@@ -59,8 +59,10 @@ Take an example.
 
 A user, Mike, synchronises his work computer (hostname employee297) with the removable drive.
 The locations-list file is "syncLocationsOn_employee297" and contains two lines:
+
 -/home/reports
 -/home/My Documents|docs
+
 First the program reads "/home/reports/" and synchronises "/home/reports" with "reports" on the removable drive.
 Next the program reads "/home/My Documents|docs" and synchronises "/home/My Documents" with "docs" on the removable drive.
 
