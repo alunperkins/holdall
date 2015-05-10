@@ -1,7 +1,7 @@
 # holdall
 linux bash script for synchronising computers over an air-gap
 
-------------CONTENTS------------
+------------------------CONTENTS------------------------
 
 1. OVERVIEW
 2. USING HOLDALL
@@ -13,7 +13,7 @@ linux bash script for synchronising computers over an air-gap
 
 
 
-------------1. OVERVIEW------------
+------------------------1. OVERVIEW------------------------
 
 Holdall is a smart bash script for synchronising computers over an air gap.
 You give a list of files/folders and it automates the process of synchronising them with a removable drive.
@@ -34,9 +34,9 @@ and of course you can check the code yourself.
 
 
 
-------------2. USING HOLDALL------------
+------------------------2. USING HOLDALL------------------------
 
-----Overview----
+--------Overview--------
 
 Syncing with a removable drive works in the usual way. You modify your file/folder on a computer and when you're done you sync to the removable drive. It knows that you were working from the latest version, and it detects that you've made a change. It then copies the host version onto the removable drive. Then you move to another computer and sync again. 
 
@@ -50,7 +50,7 @@ When you run holdall on a host, if finds the locations-list file with your hostn
 
 Using locations-list files lets you sync folders to different locations, if your computers have different directory structures, and lets you choose what to sync, if you're sharing some things across some computers but not others. You can also sync files/folders to have the same data but have different names on each computer.
 
-----Understanding the locations-list file(s) with an example----
+--------Understanding the locations-list file(s) with an example--------
 
 Inside a locations-list file are locations of folders/files, one per line.
 To copy a folder/file to a different name you can give the alternate name after a "|" delimiter.
@@ -95,7 +95,7 @@ Which ensures that "/home/pictures" is kept in sync with the folder "/home/perso
 
 There is a diagram for this example.
 
-----Running holdall----
+--------Running holdall--------
 
 Holdall takes one argument - the path to the syncing directory on the removable drive.
 
@@ -136,7 +136,7 @@ and an option to force it to run
 
  
 
-------------3. QUICK START------------
+------------------------3. QUICK START------------------------
 
 Holdall takes one argument - the path to the syncing directory on the removable drive.
 
@@ -157,7 +157,7 @@ Carry to other your computers and repeat.
 
 
 
-------------4. SOME TECHNICAL DETAILS------------
+------------------------4. SOME TECHNICAL DETAILS------------------------
 
 Run with --help for a description of the option flags you can use.
 
