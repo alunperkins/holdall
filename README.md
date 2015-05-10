@@ -97,7 +97,7 @@ Holdall takes one argument - the path to the syncing directory on the removable 
 
 For example let's say you're using the folder mounted at /media/thumbdrive/holdallFolder.
 
-$ bash holdall /media/thumbdrive/holdallFolder
+$ bash holdall.sh /media/thumbdrive/holdallFolder
 
 If you're running for the first time, or a new host, it will initialise some files and print some simple instructions for editing your locations-list file. 
 
@@ -134,13 +134,13 @@ Run it once to initialise some files. For example let's say you're using the fol
 
 /media/thumbdrive/holdallFolder.
 
-$ bash holdall /media/thumbdrive/holdallFolder
+$ bash holdall.sh /media/thumbdrive/holdallFolder
 
 Follow the prompts. It will create a template locations-list file and tell you where it is. Use any text editor to put into it the locations of files/folders you want to sync. Put each location on a separate line. See "using holdall" for help with understanding the locations-list files.
 
 Run it again to sync. 
 
-$ bash holdall /media/thumbdrive/holdallFolder
+$ bash holdall.sh /media/thumbdrive/holdallFolder
 
 Carry to other your computers and repeat.
 
