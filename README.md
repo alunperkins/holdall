@@ -1,20 +1,9 @@
 # holdall
+=======
 linux bash script for synchronising computers over an air-gap
 
-------------------------CONTENTS------------------------
-=======
 
-1. OVERVIEW
-2. USING HOLDALL
-  - overview
-  - understanding the locations-list file with an example
-  - running holdall
-3. QUICK START
-4. SOME TECHNICAL DETAILS
-
-
-
-------------------------1. OVERVIEW------------------------
+OVERVIEW
 =======
 
 Holdall is a smart bash script for synchronising computers over an air gap.
@@ -22,26 +11,25 @@ You give a list of files/folders and it automates the process of synchronising t
 Then you carry your removable drive to your other computer(s), synchronise with it, and continue working.
 It is designed to be more flexible than other syncing solutions.
 
-Advantages
-
+Advantages  
  - It's robust. It detects forked versions and handles every mistake, error and edge case I found or I could think of.
  - It's flexible. It syncs any set of files/folders you like, instead of watching a single folder as some alternatives do.
  - You control it. You control and own both the removable drive "server" and the connection to it.
 
-Since this is a new project, it'll probably need time to earn your trust before you let it loose on your important data. Until then you should note:
-
+Since this is a new project, it'll probably need time to earn your trust before you let it loose on your important data. Until then you should note:  
  - with option -i it has an interactive mode. It gets permission with "y/n?" before every rsync or rm.
  - with option -p it has a pretend mode. Writes nothing to disk at all.
  - by default it keeps two backups to every sync, using rsync's -b --backup-dir options.
- - with option -v it has a verbose mode
- - 
+ - with option -v it has a verbose mode  
 and of course you can check the code yourself.
 
 
 
-------------------------2. USING HOLDALL------------------------
+USING HOLDALL
+=======
 
---------Overview--------
+Overview
+-----------
 
 Syncing with a removable drive works in the usual way. You modify your file/folder on a computer and when you're done you sync to the removable drive. It knows that you were working from the latest version, and it detects that you've made a change. It then copies the host version onto the removable drive. Then you move to another computer and sync again. 
 
@@ -55,101 +43,78 @@ When you run holdall on a host, if finds the locations-list file with your hostn
 
 Using locations-list files lets you sync folders to different locations, if your computers have different directory structures, and lets you choose what to sync, if you're sharing some things across some computers but not others. You can also sync files/folders to have the same data but have different names on each computer.
 
---------Understanding the locations-list file(s) with an example--------
+Understanding the locations-list file(s) with an example
+-----------
 
 Inside a locations-list file are locations of folders/files, one per line.
 To copy a folder/file to a different name you can give the alternate name after a "|" delimiter.
 
-Take an example. 
-
+Take an example.  
 A user, Mike, synchronises his work computer (hostname employee297) with the removable drive.
-The locations-list file is "syncLocationsOn_employee297" and contains two lines:
-
+The locations-list file is "syncLocationsOn_employee297" and contains two lines:  
  - /home/reports
- - /home/My Documents|docs
-
+ - /home/My Documents|docs  
 First the program reads "/home/reports/" and synchronises "/home/reports" with "reports" on the removable drive.
 Next the program reads "/home/My Documents|docs" and synchronises "/home/My Documents" with "docs" on the removable drive.
 
 Mike also has a computer at home (hostname mikePC) and a laptop (hostname mikeLaptop). 
 Mike now plugs his removable drive into his laptop and synchronises with it.
-For his laptop the locations-list file is syncLocationsOn_mikeLaptop and it contains
-
+For his laptop the locations-list file is syncLocationsOn_mikeLaptop and it contains  
  - /home/work/reports
  - /home/work/docs
- - /home/personal/pictures
- 
+ - /home/personal/pictures  
 First the program reads "/home/work/reports" and synchronises that folder with "reports" on the removable drive.
 Next the program reads "/home/work/docs" and synchronises that folder with "docs" on the removable drive.
 Now his laptop and work PC are synchronised, and between them he's free to use a different directory tree and a different name for his documents folder.
 Next the program reads "/home/personal/pictures" and synchronises that folder with "pictures" on the removable drive.
 
 Mike now synchronises with his home PC. 
-The locations-list file is "syncLocationsOn_mikePC" and contains
-
- - /home/pictures
- 
+The locations-list file is "syncLocationsOn_mikePC" and contains  
+ - /home/pictures  
 Which ensures that "/home/pictures" is kept in sync with the folder "/home/personal/pictures" on his laptop.
 
 There is a diagram for this example.
 
---------Running holdall--------
+Running holdall
+-----------
 
-Holdall takes one argument - the path to the syncing directory on the removable drive.
-
-For example let's say you're using the folder mounted at /media/thumbdrive/holdallFolder.
-
-$ bash holdall.sh /media/thumbdrive/holdallFolder
-
+Holdall takes one argument - the path to the syncing directory on the removable drive.  
+For example let's say you're using the folder mounted at /media/thumbdrive/holdallFolder.  
+$ bash holdall.sh /media/thumbdrive/holdallFolder  
 If you're running for the first time, or a new host, it will initialise some files and print some simple instructions for editing your locations-list file. 
 
-It has command-line options for showing the help
-
+It has command-line options for showing the help  
  - -h
- - --help
-  
-and options for dealing with the location-list file
-
+ - --help  
+and options for dealing with the location-list file  
  - -l	list mode: show what you're syncing and what's on the drive (does not synchronise)
  - -s	(takes an argument) appends its argument to your locations-list file, e.g. "-s /home/docs" appends "/home/docs" to your locations-list file.
- - -f	(takes an argument) specify a locations-list file to use other than the usual/default one.
-  
-and options for supervising the program if there's a problem or if you're being cautious
-
+ - -f	(takes an argument) specify a locations-list file to use other than the usual/default one.  
+and options for supervising the program if there's a problem or if you're being cautious  
  - -i	run in interactive mode - user approves or refuses each rsync and rm command individually with "y/n?" dialogs.
  - -p	run in pretend mode - do not write to disk, only pretend to. Use to preview the program.
  - -v	run in verbose mode - display extra messages.
- - -b    (takes an argument) after copying with rsync keep a custom number of backups (default is 2). If the argument is "0" it keeps no backups (and deletes existing backups).
-  
-and an option to force it to run
-
- - -a	run in automatic mode - no dialogs (interactive mode overrides this).
-  
+ - -b    (takes an argument) after copying with rsync keep a custom number of backups (default is 2). If the argument is "0" it keeps no backups (and deletes existing backups).  
+and an option to force it to run  
+ - -a	run in automatic mode - no dialogs (interactive mode overrides this).  
 
  
 
-------------------------3. QUICK START------------------------
+QUICK START
+=======
 
-Holdall takes one argument - the path to the syncing directory on the removable drive.
-
-Run it once to initialise some files. For example let's say you're using the folder mounted at
-
-/media/thumbdrive/holdallFolder.
-
-$ bash holdall.sh /media/thumbdrive/holdallFolder
-
-Follow the prompts. It will create a template locations-list file and tell you where it is. Use any text editor to put into it the locations of files/folders you want to sync. Put each location on a separate line. See "using holdall" for help with understanding the locations-list files.
-
-Run it again to sync. 
-
-$ bash holdall.sh /media/thumbdrive/holdallFolder
-
+Holdall takes one argument - the path to the syncing directory on the removable drive.  
+Run it once to initialise some files. For example let's say you're using the folder mounted at /media/thumbdrive/holdallFolder.  
+$ bash holdall.sh /media/thumbdrive/holdallFolder  
+Follow the prompts. It will create a template locations-list file and tell you where it is. Use any text editor to put into it the locations of files/folders you want to sync. Put each location on a separate line. See "using holdall" for help with understanding the locations-list files.  
+Run it again to sync.  
+$ bash holdall.sh /media/thumbdrive/holdallFolder  
 Carry to other your computers and repeat.
 
 
 
-
-------------------------4. SOME TECHNICAL DETAILS------------------------
+SOME TECHNICAL DETAILS
+=======
 
 Run with --help for a description of the option flags you can use.
 
