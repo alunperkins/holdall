@@ -60,8 +60,8 @@ Take an example.
 A user, Mike, synchronises his work computer (hostname employee297) with the removable drive.
 The locations-list file is "syncLocationsOn_employee297" and contains two lines:
 
--/home/reports
--/home/My Documents|docs
+ - /home/reports
+ - /home/My Documents|docs
 
 First the program reads "/home/reports/" and synchronises "/home/reports" with "reports" on the removable drive.
 Next the program reads "/home/My Documents|docs" and synchronises "/home/My Documents" with "docs" on the removable drive.
@@ -72,11 +72,9 @@ Mike now plugs his removable drive into his laptop and synchronises with it.
 
 For his laptop the locations-list file is syncLocationsOn_mikeLaptop and it contains
 
- /home/work/reports
- 
- /home/work/docs
- 
- /home/personal/pictures
+ - /home/work/reports
+ - /home/work/docs
+ - /home/personal/pictures
  
 First the program reads "/home/work/reports" and synchronises that folder with "reports" on the removable drive.
 Next the program reads "/home/work/docs" and synchronises that folder with "docs" on the removable drive.
@@ -88,7 +86,7 @@ Mike now synchronises with his home PC.
 
 The locations-list file is "syncLocationsOn_mikePC" and contains
 
- /home/pictures
+ - /home/pictures
  
 Which ensures that "/home/pictures" is kept in sync with the folder "/home/personal/pictures" on his laptop.
 
