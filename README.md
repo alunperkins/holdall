@@ -13,6 +13,7 @@ linux bash script for synchronising computers over an air-gap
 
 
 ------------1. OVERVIEW------------
+
 Holdall is a smart bash script for synchronising computers over an air gap.
 You give a list of files/folders and it automates the process of synchronising them with a removable drive.
 Then you carry your removable drive to your other computer(s), synchronise with it, and continue working.
@@ -33,7 +34,9 @@ and of course you can check the code yourself.
 
 
 ------------2. USING HOLDALL------------
+
 ----Overview----
+
 Syncing with a removable drive works in the usual way. You modify your file/folder on a computer and when you're done you sync to the removable drive. It knows that you were working from the latest version, and it detects that you've made a change. It then copies the host version onto the removable drive. Then you move to another computer and sync again. 
 Holdall checks that you haven't forked the file/folder between this computer and the previous one (let's say you haven't), and then copies the removable drive version onto the host. Then your two computers  have identical versions of the data, and you resume working. 
 Of course, you could just do this yourself, but if you have a lot of different things you want to sync then that could get cumbersome and error-prone. Holdall will help by automating things and by automatically detecting if you have conflicting changes, etc.
@@ -42,6 +45,7 @@ Holdall is run with one argument - the path to the sync folder on the removable 
 Using locations-list files lets you sync folders to different locations, if your computers have different directory structures, and lets you choose what to sync, if you're sharing some things across some computers but not others. You can also sync files/folders to have the same data but have different names on each computer.
 
 ----Understanding the locations-list file(s) with an example----
+
 Inside a locations-list file are locations of folders/files, one per line.
 To copy a folder/file to a different name you can give the alternate name after a "|" delimiter.
 
@@ -72,6 +76,7 @@ Which ensures that "/home/pictures" is kept in sync with the folder "/home/perso
 There is a diagram for this example.
 
 ----Running holdall----
+
 Holdall takes one argument - the path to the syncing directory on the removable drive.
 For example let's say you're using the folder mounted at /media/thumbdrive/holdallFolder.
 $ bash holdall /media/thumbdrive/holdallFolder
@@ -97,6 +102,7 @@ and an option to force it to run
 
 
 ------------3. QUICK START------------
+
 Holdall takes one argument - the path to the syncing directory on the removable drive.
 Run it once to initialise some files. For example let's say you're using the folder mounted at /media/thumbdrive/holdallFolder.
 $ bash holdall /media/thumbdrive/holdallFolder
@@ -109,6 +115,7 @@ Carry to other your computers and repeat.
 
 
 ------------4. SOME TECHNICAL DETAILS------------
+
 Run with --help for a description of the option flags you can use.
 
 Don't be dismayed at the script's approximately 1000 lines. The core functionality spans a bit less than half of that. Much of that length is due to all the branching it needs to handle every possible case. As for the rest of the script, most of it is user dialogs. There are about 200 lines of comments, and about 150 are simply storing and echoing messages to the user. The --help is 50 lines. Ugly regex is split across multiple lines for readablity, etc.
