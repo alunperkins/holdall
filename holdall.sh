@@ -560,6 +560,7 @@ removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not w
 		getVerbose && rmOptsString="$rmOptsString"v
 		ls -d "$locationStem"-removed* | sort | head --lines=-$NOOFBACKUPSTOKEEP | while read oldBackupName # loop over expired backups
 		do
+			echo "removing old backup $oldBackupName"
 			getPermission "want to call rm $rmOptsString $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
 		done
 	fi
