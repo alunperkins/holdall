@@ -166,3 +166,6 @@ In future may want to implement:
  - override rsync's default way of handling  symbolic links.
  - some way to set it to run automatically (e.g. timer)? Currently syncs only when specifically run by user.
  - create a GUI front-end.
+ - per-item settings for no. of backups, etc. Could be done by expanded use of delimeters in the locations-list files.
+ - MAC CLIENT
+ - WINDOWS CLIENT

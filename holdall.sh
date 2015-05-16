@@ -201,21 +201,16 @@ listLocsListContents(){
 }
 
 scanLocsList(){
-	
-	# this scanning needs to become quite a bit more sophisticated for the updated format of the locs list...
-	
 	# check for repeated names/repeated locations
 	
 	# ---GUIDE TO THE PIPING/REGEX USED---
+	# (because sed, piping and regular expressions have the same readability as ancient Chinese handwritten by a drunken doctor)
 	# 
-	# because sed, piping and regular expressions have the same readability as ancient Chinese handwritten by a drunken doctor
-	# 
-	# sed 's/^\([^#]*\)#.*/\1/' $LOCSLIST strips out comments
-	# sed "s/^.*|\(.*\)/\1/" then replaces "/file/addresses|alias" with "alias"
-	# sed "s/^.*\/\(.*\)/\1/" then replaces any addresses left over with their basenames
+	# sed "s/^.*|\(.*\)/\1/" replaces e.g. "/file/addresses|alias" with "alias" and "file/addresses2" with "file/addresses2".
+	# sed "s/^.*\/\(.*\)/\1/" then replaces any addresses left over with their basenames e.g. "file/addresses2" with "addresses2".
 	# grep -v "^\s.*$" then strips out empty lines
 	# sort then sorts alphabetically
-	# uniq -d then finds ADJACENT repeated lines
+	# uniq -d then finds adjacent repeated lines
 	
 	# check for names appearing more than once
 	local listOfRepeatedNames=$(\
@@ -226,28 +221,63 @@ scanLocsList(){
 	| uniq -d \
 	)
 	
-	# similarly, sed "s/^\(.*\)|.*/\1/" replaces "/file/address|alias" with "/file/address" - i.e. strips out aliases
-	# otherwise identical to the above
+	# grep -o "^[^|]*" replaces "/file/address|alias" with "/file/address" - i.e. strips out any alias from a line
 	
 	# check for items appearing more than once
-	local listOfRepeatedLocations=$(\
+	#local listOfRepeatedLocations=$(\
+	#cleanCommentsAndWhitespace $LOCSLIST \
+	#| sed "s/^\(.*\)|.*/\1/" \
+	#| grep -v "^\s*$" \
+	#| sort \
+	#| uniq -d \
+	#)
+	local listOfLocations=$(\
 	cleanCommentsAndWhitespace $LOCSLIST \
-	| sed "s/^\(.*\)|.*/\1/" \
+	| grep -o "^[^|]*" \
 	| grep -v "^\s*$" \
+	)
+	local listOfRepeatedLocations=$(\
+	echo "$listOfLocations" \
 	| sort \
 	| uniq -d \
 	)
 	
+	if [[ !(-z "$listOfRepeatedNames") ]]; then
+		echo ""
+		echo "error: there are repeated names in the locations-list file. Please open it and check these names:"
+		echo "$listOfRepeatedNames"
+	fi
+	if [[ !(-z "$listOfRepeatedLocations") ]]; then
+		echo ""
+		echo "error: there are repeated locations in the locations-list file. Please open it and check these locations:"
+		echo "$listOfRepeatedLocations"
+	fi
+	if [[ !(-z "$listOfRepeatedNames") || !(-z "$listOfRepeatedLocations") ]]; then exit 9; fi
+	
+	# if there are no repeats then check for a presence of both a directory and its subdirectory (may malfunction if there are repeated names/locations)
+	# (this doesn't read links, so it's just checking if locations are substrings of each other.)
+	while read locationLine
+	do
+		# use sed to retrieve lines which start with $locationLine, then count them with wc -l. Sed output includes $locationLine itself so wc answer is always >= 1
+		noOfAppearances=$(sed -n -e "\:^$locationLine:p" <<< "$listOfLocations" | wc -l) 
+		if [[ "$noOfAppearances" -gt 1 ]]; then 
+			echo "WARNING: $(($noOfAppearances-1)) subfolder(s) of $locationLine appears as a separate entry in the locations-list file, but folders are synced recursively, so this will duplicate data."
+			# a directory and its subdirectory is a warning, not an error, since there are (uncommon) reasons for doing it. Program doesn't exit.
+		fi
+	done <<< "$listOfLocations"
+	
+	return 0
 	# return 0 if no repeats were found
-	if [[ (-z $listOfRepeatedNames) && (-z $listOfRepeatedLocations) ]]; then return 0; fi
-	# else complain and exit
-	echo "error: there are repeated names and/or repeated locations in $LOCSLIST"
-	echo "repeated names:"
-	echo $listOfRepeatedNames
-	echo "repeated locations:"
-	echo $listOfRepeatedLocations
-	echo "please remove the duplicates by editing the file $LOCSLIST"
-	exit 9;
+	#if [[ (-z $listOfRepeatedNames) && (-z $listOfRepeatedLocations) ]]; then return 0; fi
+	## else complain and exit
+	#echo ""
+	#echo "error: there are repeated names and/or repeated locations in $LOCSLIST"
+	#echo "repeated names:"
+	#echo $listOfRepeatedNames
+	#echo "repeated locations:"
+	#echo $listOfRepeatedLocations
+	#echo "please remove the duplicates by editing the file $LOCSLIST"
+	#exit 9;
 }
 createLocsListTemplateDialog(){
 	echo "The locations-list file $LOCSLIST does not exist."
@@ -508,6 +538,9 @@ syncSourceToDest(){
 	local sourceLoc="$1"
 	local destLoc="$2"
 	local copyExitVal=""
+	
+	# safety exit for people testing changes to the code - once while I was testing new code a broken command caused rsync to nearly delete work (retrieved the work from the --backup-dir folder though)
+	if [[ (-z $sourceLoc) || (-z $destLoc) ]]; then echo "UNKNOWN ERROR: syncSourceToDest was passed a blank argument. Exiting to prevent data loss"; exit 104; fi
 	
 	# set the options string for rsync
 	local shortOpts="-rtgop" # short options always used
