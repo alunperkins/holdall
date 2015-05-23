@@ -1,6 +1,25 @@
 # holdall
 linux bash script for synchronising computers over an air-gap
 
+Please let me know if you find it useful! And please submit feature requests!
+
+
+QUICK START
+=======
+Holdall works in a simple way: run it on your computer to synchronise selected files/folders to your removable drive. Carry the drive to your other computer and run the program again to sync with that computer. Your two computers are now in sync. Repeat with other computers, and remember to sync before and after working.
+
+Holdall requires no install. Just run Holdall with one argument - the path to the syncing directory on the removable drive.  
+On a new computer you should run holdall once to initialise some files. For example let's say you're using the folder mounted at /media/thumbdrive/holdallFolder. First run:  
+
+$ bash holdall.sh /media/thumbdrive/holdallFolder  
+
+Follow the prompts. Holdall will create a template locations-list file and tell you where it is. Use any text editor open it (you will find some simple instructions inside it) and put into it the locations of files/folders you want to sync. Put each location on a separate line. See "using holdall" for help with understanding the locations-list files.  
+Now it's configured for this computer and in future you can sync all your files/folders simply by running:  
+
+$ bash holdall.sh /media/thumbdrive/holdallFolder  
+
+Carry to your other computers and repeat.
+
 
 OVERVIEW
 =======
@@ -14,6 +33,8 @@ Advantages
  - It's robust. It detects forked versions and handles every mistake, error and edge case I found or I could think of.
  - It's flexible. It syncs any set of files/folders you like, instead of watching a single folder as some alternatives do.
  - You control it. You control and own both the removable drive "server" and the connection to it.
+ - Very simple to use
+ - No install
 
 Since this is a new project, it'll probably need time to earn your trust before you let it loose on your important data. Until then you should note:  
  - with option -i it has an interactive mode. It gets permission with "y/n?" before every rsync or rm.
@@ -21,14 +42,14 @@ Since this is a new project, it'll probably need time to earn your trust before 
  - by default it keeps two backups to every sync, using rsync's -b --backup-dir options.
  - with option -v it has a verbose mode  
 
-and of course you can check the code yourself.
-
+and of course you can check the code yourself.  
+I already use holdall v1.0 to synchronise all my work, with no problems at all. I use it on Ubuntu and Debian, to sync locations on ext4/ntfs filesystems to my FAT32 removable drive (I know I shouldn't use FAT32 for this, I will sort it out later). New users should take care when first trying holdall, especially if they have other hardware/distributions/filesystems.
 
 
 USING HOLDALL
 =======
 
-Overview
+Introduction
 -----------
 
 Syncing with a removable drive works in the usual way. You modify your file/folder on a computer and when you're done you sync to the removable drive. It knows that you were working from the latest version, and it detects that you've made a change. It then copies the host version onto the removable drive. Then you move to another computer and sync again. 
@@ -43,7 +64,7 @@ How does it know which files/folders on your computer you want to sync with the 
 
 When you run holdall on a host, it finds the appropriate locations-list file (the one with your hostname), and works its way down the list of locations. For each one it looks on your computer for the file/folder and in the removable drive's sync folder for a file/folder with the same name. Then it decides which one has the latest work, and then uses rsync to copy the recent version to the older version.
 
-Using locations-list files lets you sync folders to different locations, if your computers have different directory structures, and lets you choose what to sync, if you're sharing some things across some computers but not others. You can also sync files/folders to have the same data but have different names on each computer.
+Using locations-list files lets you sync folders to different locations, if your computers have different directory structures, and lets you choose what to sync, if you're sharing some things across some computers but not others. You can also sync files/folders to have the same data but have different names on each computer. As well as syncing work this makes it possible to sync e.g. internet bookmark files, or system config files where compatible.
 
 Understanding the locations-list file(s) with an example
 -----------
@@ -95,34 +116,18 @@ It has command-line options for showing the help
 and options for dealing with the location-list file  
  - -l	list mode: show what you're syncing and what's on the drive (does not synchronise)
  - -s	(takes an argument) appends its argument to your locations-list file, e.g. "-s /home/docs" appends "/home/docs" to your locations-list file.
- - -f	(takes an argument) specify a locations-list file to use other than the usual/default one.  
+ - -f	(takes an argument) specify a locations-list file to use other than the default one.  
 
 and options for supervising the program if there's a problem or if you're being cautious  
  - -i	run in interactive mode - user approves or refuses each rsync and rm command individually with "y/n?" dialogs.
  - -p	run in pretend mode - do not write to disk, only pretend to. Use to preview the program.
  - -v	run in verbose mode - display extra messages.
- - -b    (takes an argument) after copying with rsync keep a custom number of backups (default is 2). If the argument is "0" it keeps no backups (and deletes existing backups).  
+ - -b   (takes an argument) after copying with rsync keep a custom number of backups (default is 2). Accepts "0" as instruction to keep no backups (and delete existing backups).  
 
 and an option to force it to run  
  - -a	run in automatic mode - no dialogs (interactive mode overrides this).  
 
- 
-
-QUICK START
-=======
-
-Holdall takes one argument - the path to the syncing directory on the removable drive.  
-Run it once to initialise some files. For example let's say you're using the folder mounted at /media/thumbdrive/holdallFolder.  
-
-$ bash holdall.sh /media/thumbdrive/holdallFolder  
-
-Follow the prompts. It will create a template locations-list file and tell you where it is. Use any text editor to put into it the locations of files/folders you want to sync. Put each location on a separate line. See "using holdall" for help with understanding the locations-list files.  
-Run it again to sync.  
-
-$ bash holdall.sh /media/thumbdrive/holdallFolder  
-
-Carry to your other computers and repeat.
-
+When handling errors such as a forked file/folder, or missing data the default behaviour is alwasy to ask/confirm with the user before acting. These dialogs should be rare, but you can use automatic mode to make sure execution isn't interrupted.
 
 
 SOME TECHNICAL DETAILS
@@ -159,6 +164,50 @@ It's not ever consulted by the program, it just exists. I don't think it will ev
 By default the rsync command sets the -b and --backup-dir options to keep two backups. The file/folder name is given a suffix "-removed-[date and time]~" (note the tilde at the end). These backups are not synchronised with anywhere else. There is no facilty for restoring from a backup, it would have to be done manually. These are just a safety net; I've never used them.
 
 When syncing modification times are preserved. I find that if my computers use ext4 and my removable drive uses FAT32 there is some funny-looking behaviour because it will syncronise mod times of files even if their contents are identical. It's best to use the same filesystem on your disks.
+
+**Code overview* *  
+* declare readonly variables esp. long messages *  
+* getters *  
+getPretend()  
+getVerbose()  
+getPermission()  
+* utility to process the locations-list file (user-editable) *  
+cleanCommentsAndWhitespace()  
+* utility to datestamp messages written to the log *  
+echoToLog()  
+* functions to respond to options flags *  
+showHelp() * if -h *  
+usage() * if invalid argument *  
+addLocation() * if -s *  
+listLocsListContents() * if -l *  
+* utility to check for basic errors in the locations-list file (since it's user-editable) *  
+scanLocsList()  
+* dialogs to handle errors *  
+createLocsListTemplateDialog()  
+noSyncStatusFileDialog()  
+eraseItemFromStatusFileDialog()  
+eraseItemFromStatusFile()  
+chooseVersionDialog()  
+unexpectedAbsenceDialog()  
+* functions to perform the several steps of a copy command *  
+synchronise()  
+syncSourceToDest()  
+removeOldBackups()  
+writeToStatus()  
+* core logic *  
+readOptions()  
+modTimeOf() * transparently returns mod time of anything passed *  
+noRsync() * handles the exit if required program rsync isn't installed *  
+main(){  
+  * basic checking that files are ready *  
+  * "while read line" loop over locations in locations-list file *  
+    * read the line from the file *  
+    * retrieve data from syncStatus file *  
+    * retrieve data from disk *  
+    * logic based on non/existence of files/folders, their relative mod times, and their recorded sync status *  
+  * done *  
+}  
+
 
 FUTURE WORK?  
 In future may want to implement:  
