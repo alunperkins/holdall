@@ -165,47 +165,47 @@ By default the rsync command sets the -b and --backup-dir options to keep two ba
 
 When syncing modification times are preserved. I find that if my computers use ext4 and my removable drive uses FAT32 there is some funny-looking behaviour because it will syncronise mod times of files even if their contents are identical. It's best to use the same filesystem on your disks.
 
-**Code overview* *  
-* declare readonly variables esp. long messages *  
-* getters *  
+**Code overview**  
+*declare readonly variables esp. long messages*
+*getters*
 getPretend()  
 getVerbose()  
 getPermission()  
-* utility to process the locations-list file (user-editable) *  
+*utility to process the locations-list file (user-editable)*
 cleanCommentsAndWhitespace()  
-* utility to datestamp messages written to the log *  
+*utility to datestamp messages written to the log*
 echoToLog()  
-* functions to respond to options flags *  
-showHelp() * if -h *  
-usage() * if invalid argument *  
-addLocation() * if -s *  
-listLocsListContents() * if -l *  
-* utility to check for basic errors in the locations-list file (since it's user-editable) *  
+*functions to respond to options flags*
+showHelp() *if -h*
+usage() *if invalid argument*
+addLocation() *if -s*
+listLocsListContents() *if -l*
+*utility to check for basic errors in the locations-list file (since it's user-editable)*
 scanLocsList()  
-* dialogs to handle errors *  
+*dialogs to handle errors*
 createLocsListTemplateDialog()  
 noSyncStatusFileDialog()  
 eraseItemFromStatusFileDialog()  
 eraseItemFromStatusFile()  
 chooseVersionDialog()  
 unexpectedAbsenceDialog()  
-* functions to perform the several steps of a copy command *  
+*functions to perform the several steps of a copy command*
 synchronise()  
 syncSourceToDest()  
 removeOldBackups()  
 writeToStatus()  
-* core logic *  
+*core logic*
 readOptions()  
-modTimeOf() * transparently returns mod time of anything passed *  
-noRsync() * handles the exit if required program rsync isn't installed *  
+modTimeOf() *transparently returns mod time of anything passed*
+noRsync() *handles the exit if required program rsync isn't installed*
 main(){  
-  * basic checking that files are ready *  
-  * "while read line" loop over locations in locations-list file *  
-    * read the line from the file *  
-    * retrieve data from syncStatus file *  
-    * retrieve data from disk *  
-    * logic based on non/existence of files/folders, their relative mod times, and their recorded sync status *  
-  * done *  
+  *basic checking that files are ready*
+  *"while read line" loop over locations in locations-list file*
+    *read the line from the file*
+    *retrieve data from syncStatus file*
+    *retrieve data from disk*
+    *logic based on non/existence of files/folders, their relative mod times, and their recorded sync status*
+  *done*
 }  
 
 
