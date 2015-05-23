@@ -211,7 +211,6 @@ main(){
 
 FUTURE WORK?  
 In future may want to implement:  
- - detect and handle if user tries to sync a folder and its subfolder as separate items. It works but wastes disk space.
  - override rsync's default way of handling  symbolic links.
  - some way to set it to run automatically (e.g. timer)? Currently syncs only when specifically run by user.
  - create a GUI front-end.

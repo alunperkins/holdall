@@ -40,7 +40,7 @@ readonly MESSAGEAlreadyInSync="No changes since last synchronisation. "
 readonly MESSAGESyncingRmvblToHost="Syncing removable drive >> host"
 readonly MESSAGESyncingHostToRmvbl="Syncing host >> removable drive"
 
-readonly LINEOFDASHES="----------------------------------------------------------------------------------------------------------------------------" # visual separator
+readonly LOTSOFDASHES="----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------" # variable provided for cutting dashes from in echoTitle
 
 # ---------- TO DO ----------
 # implement checking if an itemHostLoc is a subfolder of itemRmvblLoc, or vice-versa
@@ -83,6 +83,11 @@ cleanCommentsAndWhitespace(){
 }
 echoToLog(){
 	getPretend || echo "$(date +%F,%R), $HOSTNAME, $1" >> $LOGFILE
+}
+echoTitle(){
+	local title=$1
+	echo -n "----"
+	printf "%s%s \n" "$title" ${LOTSOFDASHES:0:(($(tput cols)-${#title}-20))}
 }
 
 showHelp(){
@@ -242,17 +247,17 @@ scanLocsList(){
 	| uniq -d \
 	)
 	
-	if [[ !(-z "$listOfRepeatedNames") ]]; then
+	if [[ ! -z "$listOfRepeatedNames" ]]; then
 		echo ""
 		echo "error: there are repeated names in the locations-list file. Please open it and check these names:"
 		echo "$listOfRepeatedNames"
 	fi
-	if [[ !(-z "$listOfRepeatedLocations") ]]; then
+	if [[ ! -z "$listOfRepeatedLocations" ]]; then
 		echo ""
 		echo "error: there are repeated locations in the locations-list file. Please open it and check these locations:"
 		echo "$listOfRepeatedLocations"
 	fi
-	if [[ !(-z "$listOfRepeatedNames") || !(-z "$listOfRepeatedLocations") ]]; then exit 9; fi
+	if [[ ! -z "$listOfRepeatedNames" || ! -z "$listOfRepeatedLocations" ]]; then exit 9; fi
 	
 	# if there are no repeats then check for a presence of both a directory and its subdirectory (may malfunction if there are repeated names/locations)
 	# (this doesn't read links, so it's just checking if locations are substrings of each other.)
@@ -408,11 +413,11 @@ chooseVersionDialog(){
 		else
 			echo "   using diff --side-by-side --suppress-common-lines"
 		fi
-		echo $LINEOFDASHES
+		echoTitle " contents comparison "
 		diff -y <(echo "Host (ls folder contents/file contents) on left") <(echo "Removable drive (ls folder contents/file contents) on right")
 		diff -y <(echo "Host mod time $itemHostModTimeReadable") <(echo "Removable drive mod time $itemRmvblModTimeReadable")
 		# (just using diff -y here so it lines up with listing below)
-		echo $LINEOFDASHES
+		echoTitle ""
 		if [[ -d "$itemRmvblLoc" ]] # if a directory: show diff of recursive dir contents and list files that differ
 		then
 			# use a sed to remove the unwanted top-level directory address, leaving just the part of the file address relative to $itemHostLoc($itemRmvblLoc)
@@ -422,7 +427,7 @@ chooseVersionDialog(){
 		else # if a file: show diff of the two files
 			diff -y --suppress-common-lines "$itemHostLoc" "$itemRmvblLoc"
 		fi
-		echo $LINEOFDASHES
+		echoTitle " please select "
 		echo "   (blank if no difference)"
 		# time for the dialog itself
 		echo "   $NOOVRD to take no action this time (re-run to see this dialog again)"
@@ -788,7 +793,7 @@ main(){
 		local itemHostLoc=$(readlink -m "$itemHostLocRaw")
 		if [[ -z "$itemAlias" ]]; then local itemName=$(basename "$itemHostLoc"); else local itemName="$itemAlias"; fi
 		local itemRmvblLoc=$RMVBLDIR/"$itemName"
-		echo ---$itemName-$LINEOFDASHES
+		echoTitle " $itemName "
 		
 		echo syncing $itemHostLoc with $itemRmvblLoc
 		
@@ -1041,9 +1046,9 @@ main(){
 	# trim log file to a reasonable length
 	tail -n 500 "$LOGFILE" > "$LOGFILE.tmp" 2> /dev/null && mv "$LOGFILE.tmp" "$LOGFILE"
 	
-	getVerbose && echo $LINEOFDASHES
+	getVerbose && echoTitle " end of script "
 	
-	echo end of script
+	# echo end of script
 }
 
 main "$@"
