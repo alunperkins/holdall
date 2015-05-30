@@ -391,7 +391,7 @@ chooseVersionDialog(){
 	local itemRmvblLoc="$4"
 	local itemRmvblModTime=$5
 	local itemRmvblModTimeReadable=$(date --date=@$itemRmvblModTime +%c)
-	local itemSynctime=$6
+	local itemSyncTime=$6
 	local itemSyncTimeReadable=$(date --date=@$itemSyncTime +%c)
 	
 	if [[ $AUTOMATIC == "on" ]]
