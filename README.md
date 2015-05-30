@@ -165,39 +165,41 @@ By default the rsync command sets the -b and --backup-dir options to keep two ba
 
 When syncing modification times are preserved. I find that if my computers use ext4 and my removable drive uses FAT32 there is some funny-looking behaviour because it will syncronise mod times of files even if their contents are identical. It's best to use the same filesystem on your disks.
 
-**Code overview**  
+**Code overview**
 *declare readonly variables esp. long messages*  
 *getters*  
-getPretend()  
-getVerbose()  
-getPermission()  
-*utility to process the locations-list file (user-editable)*  
-cleanCommentsAndWhitespace()  
-*utility to datestamp messages written to the log*  
-echoToLog()  
-*functions to respond to options flags*  
-showHelp() *if -h*  
-usage() *if invalid argument*  
-addLocation() *if -s*  
-listLocsListContents() *if -l*  
-*utility to check for basic errors in the locations-list file (since it's user-editable)*  
-scanLocsList()  
-*dialogs to handle errors*  
-createLocsListTemplateDialog()  
-noSyncStatusFileDialog()  
-eraseItemFromStatusFileDialog()  
-eraseItemFromStatusFile()  
-chooseVersionDialog()  
-unexpectedAbsenceDialog()  
-*functions to perform the several steps of a copy command*  
-synchronise()  
-syncSourceToDest()  
-removeOldBackups()  
-writeToStatus()  
-*core logic*  
-readOptions()  
-modTimeOf() *transparently returns mod time of anything passed*  
-noRsync() *handles the exit if required program rsync isn't installed*  
+getPretend()
+getVerbose()
+getPermission()
+*utilities*
+echoToLog()
+echoTitle()
+readableDate()
+diffItems()
+noRsync()
+modTimeOf()
+*help*
+showHelp()
+usage()
+*dealing with the locs-list*
+cleanCommentsAndWhitespace()
+addLocation()
+listLocsListContents()
+scanLocsList()
+createLocsListTemplateDialog()
+*dealing with other errors*
+noSyncStatusFileDialog()
+eraseItemFromStatusFileDialog()
+eraseItemFromStatusFile()
+chooseVersionDialog()
+unexpectedAbsenceDialog()
+*performing the copy*
+synchronise()
+syncSourceToDest()
+removeOldBackups()
+writeToStatus()
+*core program and logic*
+readOptions()
 main(){  
   *basic checking that files are ready*  
   *"while read line" loop over locations in locations-list file*  

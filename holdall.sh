@@ -68,19 +68,7 @@ getPermission(){
 		return 1
 	fi
 }
-cleanCommentsAndWhitespace(){
-	local inputFile="$1"
-	# three stetps to clean the input
-	# 1. remove comments - grep to keep only the parts of the line before any #
-	# 2. remove leading whitespace - sed to replace leading whitespace with nothing
-	# 3. remove trailing whitespace - sed to replace trailing whitespace with nothing
-	local outputFile="$(\
-		grep -o ^[^#]* $inputFile \
-		| sed 's/^[[:space:]]*//' \
-		| sed 's/[[:space:]]*$//' \
-	)"
-	echo "$outputFile"
-}
+
 echoToLog(){
 	getPretend || echo "$(date +%F,%R), $HOSTNAME, $1" >> $LOGFILE
 }
@@ -88,6 +76,57 @@ echoTitle(){
 	local title=$1
 	echo -n "----"
 	printf "%s%s \n" "$title" ${LOTSOFDASHES:0:(($(tput cols)-${#title}-20))}
+}
+readableDate(){
+	local dateInSecondSinceEpoch=$1
+	return date --date=@$dateInSecondSinceEpoch +%c
+}
+diffItems(){
+	local itemHostLoc="$1"
+	local itemRmvblLoc="$2"
+	local itemVersionsDifference=""
+	if [[ -d "$itemRmvblLoc" ]]
+	then
+		itemVersionsDifference=$(diff --brief --recursive "$itemHostLoc" "$itemRmvblLoc") # this can be a bit slow on large directories....
+	else
+		itemVersionsDifference=$(diff "$itemHostLoc" "$itemRmvblLoc")
+	fi
+	return "$itemVersionsDifference"
+}
+noRsync(){ # NOT TESTED =P
+	echo $ERRORMESSAGENoRsync
+	exit 3
+}
+
+modTimeOf(){
+	# returns the latest mod time of argument $1
+	# if passed a file, it returns the mod time of the file, 
+	# if passed a directory, returns the latest mod time of the directory, its subdirectories, and its contained files.
+	# in the format seconds since epoch
+	
+	local queriedItem="$1"
+	local itemModTime=""
+	local fileModTime=""
+	local subdirModTime=""
+	
+	if [[ ! -e "$queriedItem" ]]; then echo "modTimeOf called on nonexistent file/folder $queriedItem - hard-coded mistake exists"; exit 103; fi
+	
+	if [[ -d "$queriedItem" ]] # if it is a directory
+	then
+		fileModTime=$(find "$queriedItem" -type f -exec date -r \{\} +%s \; | sort -n | tail -1) # = most recent mod time among the files (if no files present returns empty string)
+		subdirModTime=$(find "$queriedItem" -type d -exec date -r \{\} +%s \; | sort -n | tail -1) # = most recent mod time among the dirs (including $queriedItem itself)
+		# subdirModTime includes the top dir itself; it cannot be blank. 
+		if [[ -z $fileModTime ]] # if there were no files (i.e. only (sub)directories)
+		then
+			itemModTime=$subdirModTime
+		else
+			if [[ $fileModTime -gt $subdirModTime ]]; then itemModTime=$fileModTime; else itemModTime=$subdirModTime; fi # choose the newer of the mod times
+		fi
+	else # if it is a file
+		itemModTime=$(date -r "$queriedItem" +%s)
+	fi
+	
+	echo $itemModTime
 }
 
 showHelp(){
@@ -145,6 +184,20 @@ showHelp(){
 usage(){
 	echo "Usage: $PROGNAME [OPTIONS: h,p,v,a,i,l,s,f,b] syncTargetFolder"
 	echo use $PROGNAME -h to see full help text
+}
+
+cleanCommentsAndWhitespace(){
+	local inputFile="$1"
+	# three stetps to clean the input
+	# 1. remove comments - grep to keep only the parts of the line before any #
+	# 2. remove leading whitespace - sed to replace leading whitespace with nothing
+	# 3. remove trailing whitespace - sed to replace trailing whitespace with nothing
+	local outputFile="$(\
+		grep -o ^[^#]* $inputFile \
+		| sed 's/^[[:space:]]*//' \
+		| sed 's/[[:space:]]*$//' \
+	)"
+	echo "$outputFile"
 }
 addLocation(){
 	local locationToAdd="$1"
@@ -204,7 +257,6 @@ listLocsListContents(){
 	scanLocsList
 	exit 0
 }
-
 scanLocsList(){
 	# check for repeated names/repeated locations
 	
@@ -387,12 +439,12 @@ chooseVersionDialog(){
 	local itemName="$1"
 	local itemHostLoc="$2"
 	local itemHostModTime=$3
-	local itemHostModTimeReadable=$(date --date=@$itemHostModTime +%c) # the '@' indicates the date format as the number of seconds since the epoch
+	local itemHostModTimeReadable=$(readableDate $itemHostModTime) # the '@' indicates the date format as the number of seconds since the epoch
 	local itemRmvblLoc="$4"
 	local itemRmvblModTime=$5
-	local itemRmvblModTimeReadable=$(date --date=@$itemRmvblModTime +%c)
-	local itemSynctime=$6
-	local itemSyncTimeReadable=$(date --date=@$itemSyncTime +%c)
+	local itemRmvblModTimeReadable=$(readableDate $itemRmvblModTime)
+	local itemSyncTime=$6
+	local itemSyncTimeReadable=$(readableDate $itemSyncTime)
 	
 	if [[ $AUTOMATIC == "on" ]]
 	then
@@ -448,7 +500,6 @@ chooseVersionDialog(){
 		fi # end if [ ...user input... ]
 	fi # end if [ automatic mode ]
 }
-
 unexpectedAbsenceDialog(){
 	local itemName="$1"
 	local itemHostLoc="$2"
@@ -513,6 +564,8 @@ synchronise(){
 	local itemHostLoc="$3"
 	local itemRmvblLoc="$4"
 	
+	echoToLog "$itemName, difference, $(diffItems "$itemHostLoc" "$itemRmvblLoc")"
+	
 	case $syncDirection in
 		$SYNCDIRECTIONHOSTTORMVBL)
 			echo "$itemName: $MESSAGESyncingHostToRmvbl"
@@ -537,7 +590,6 @@ synchronise(){
 			;;
 	esac
 }
-
 
 syncSourceToDest(){
 	local sourceLoc="$1"
@@ -603,7 +655,6 @@ removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not w
 		done
 	fi
 }
-
 writeToStatus(){
 	getPretend && return 0; # in pretend mode simply skip this entire function
 	local itemName="$1"
@@ -679,40 +730,7 @@ readOptions(){
 		exit 1
 	fi
 }
-modTimeOf(){
-	# returns the latest mod time of argument $1
-	# if passed a file, it returns the mod time of the file, 
-	# if passed a directory, returns the latest mod time of the directory, its subdirectories, and its contained files.
-	# in the format seconds since epoch
-	
-	local queriedItem="$1"
-	local itemModTime=""
-	local fileModTime=""
-	local subdirModTime=""
-	
-	if [[ ! -e "$queriedItem" ]]; then echo "modTimeOf called on nonexistent file/folder $queriedItem - hard-coded mistake exists"; exit 103; fi
-	
-	if [[ -d "$queriedItem" ]] # if it is a directory
-	then
-		fileModTime=$(find "$queriedItem" -type f -exec date -r \{\} +%s \; | sort -n | tail -1) # = most recent mod time among the files (if no files present returns empty string)
-		subdirModTime=$(find "$queriedItem" -type d -exec date -r \{\} +%s \; | sort -n | tail -1) # = most recent mod time among the dirs (including $queriedItem itself)
-		# subdirModTime includes the top dir itself; it cannot be blank. 
-		if [[ -z $fileModTime ]] # if there were no files (i.e. only (sub)directories)
-		then
-			itemModTime=$subdirModTime
-		else
-			if [[ $fileModTime -gt $subdirModTime ]]; then itemModTime=$fileModTime; else itemModTime=$subdirModTime; fi # choose the newer of the mod times
-		fi
-	else # if it is a file
-		itemModTime=$(date -r "$queriedItem" +%s)
-	fi
-	
-	echo $itemModTime
-}
-noRsync(){ # NOT TESTED =P
-	echo $ERRORMESSAGENoRsync
-	exit 3
-}
+
 main(){
 	if [[ $@ == *"--help"*  ]]; then showHelp; exit 0; fi
 	readOptions "$@"
@@ -813,9 +831,11 @@ main(){
 		
 		if [[ $itemSyncedPreviously -eq true ]]
 		then
-			getVerbose && echo status file: synced previously on = $(date --date=@$itemSyncTime +%c)
+			getVerbose && echo status file: synced previously on = $(readableDate $itemSyncTime)
+			echoToLog "$itemName, last synced on, $(readableDate $itemSyncTime)"
 		else
 			getVerbose && echo status file: first-time sync
+			echoToLog "$itemName, first-time sync"
 		fi
 		
 		# is this host shown as up to date with this item?
@@ -824,8 +844,10 @@ main(){
 		if [[ $hostUpToDateWithItem -eq true ]]
 		then
 			getVerbose && echo status file: this host has latest changes
+			echoToLog "$itemName, this host has latest changes"
 		else
 			getVerbose && echo status file: this host does not have latest changes
+			echoToLog "$itemName, this host does not have latest changes"
 		fi
 		
 		# an example of an invalid state for the status 
@@ -850,7 +872,7 @@ main(){
 		
 		# --------------------------------if neither removable drive nor host exist--------------------------------
 		if [[ $itemHostExists -ne true && $itemRmvblExists -ne true ]]
-		then 
+		then
 			if [[ $itemSyncedPreviously -eq true || $hostUpToDateWithItem -eq true ]]
 			then 
 				# BRANCH END
@@ -919,8 +941,10 @@ main(){
 
 			itemRmvblModTime=$(modTimeOf "$itemRmvblLoc")
 			itemHostModTime=$(modTimeOf "$itemHostLoc")
-			getVerbose && echo from disk: mod time of version on host: $(date --date=@$itemHostModTime +%c)
-			getVerbose && echo from disk: mod time of version on removable drive: $(date --date=@$itemRmvblModTime +%c)
+			getVerbose && echo from disk: mod time of version on host: $(readableDate $itemHostModTime)
+			getVerbose && echo from disk: mod time of version on removable drive: $(readableDate $itemRmvblModTime)
+			echoToLog "host mode time, $(readableDate $itemHostModTime)"
+			echoToLog "rmvbl mode time, $(readableDate $itemRmvblModTime)"
 			
 			if [[ $itemSyncedPreviously -ne true ]]
 			then
@@ -932,7 +956,8 @@ main(){
 				chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime 0 # never synced before so pass a zero for sync time
 				continue
 			fi
-			# so below here assume $itemSyncedPreviously is true
+			# so:
+			# -------- below here assume $itemSyncedPreviously is true --------
 			
 			if [[ $itemRmvblModTime -gt $itemSyncTime && $itemSyncTime -gt $itemHostModTime ]]
 			then
@@ -970,7 +995,7 @@ main(){
 					# item has been forked
 					echo "$itemName: $WARNINGFork"
 					echoToLog "$itemName, $WARNINGFork"
-					echo "$itemName: status file: synced on $(date --date=@$itemSyncTime +%c)"
+					echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
 					# offer override
 					chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 				fi
@@ -982,7 +1007,7 @@ main(){
 				# item has been forked
 				echo "$itemName: $WARNINGFork"
 				echoToLog "$itemName, $WARNINGFork"
-				echo "$itemName: status file: synced on $(date --date=@$itemSyncTime +%c)"
+				echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
 				# offer override
 				chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 				continue
@@ -998,14 +1023,16 @@ main(){
 					# use diff to confirm both versions are actually the same
 					echo "$itemName: $MESSAGEAlreadyInSync"
 					echo "$itemName: Confirming versions are identical - this may take a few seconds..."
-					local notTheSame=""
-					if [[ -d "$itemRmvblLoc" ]]
-					then
-						notTheSame=$(diff --brief --recursive "$itemHostLoc" "$itemRmvblLoc") # this can be a bit slow on large directories....
-					else
-						notTheSame=$(diff "$itemHostLoc" "$itemRmvblLoc")
-					fi
-					if [[ ! -z $notTheSame ]]
+					local itemVersionsDifference="$(diffItems "$itemHostLoc" "$itemRmvblLoc")"
+					echoToLog "$itemName, difference, $itemVersionsDifference"
+					#local itemVersionsDifference=""
+					#if [[ -d "$itemRmvblLoc" ]]
+					#then
+					#	itemVersionsDifference=$(diff --brief --recursive "$itemHostLoc" "$itemRmvblLoc") # this can be a bit slow on large directories....
+					#else
+					#	itemVersionsDifference=$(diff "$itemHostLoc" "$itemRmvblLoc")
+					#fi
+					if [[ ! -z $itemVersionsDifference ]]
 					then
 						echo $WARNINGUnexpectedDifference
 						echoToLog "$itemName, $WARNINGUnexpectedDifference"
@@ -1020,7 +1047,7 @@ main(){
 					#                      so how come this host isn't on the up-to-date list?)
 					echo "$itemName: $WARNINGUnexpectedlyNotOnUpToDateList"
 					echoToLog "$itemName, $WARNINGUnexpectedlyNotOnUpToDateList"
-					echo "$itemName: status file: synced on $(date --date=@$itemSyncTime +%c)"
+					echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
 					# offer override
 					chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 				fi
@@ -1032,7 +1059,7 @@ main(){
 			# 	(so can't sensibly decide what to do)
 			echo "$itemName: $WARNINGAmbiguousTimings"
 			echoToLog "$itemName, $WARNINGAmbiguousTimings"
-			echo "$itemName: status file: synced on $(date --date=@$itemSyncTime +%c)"
+			echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
 			# offer override
 			chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 			
@@ -1044,7 +1071,7 @@ main(){
 	done # end of while loop over items
 	
 	# trim log file to a reasonable length
-	tail -n 500 "$LOGFILE" > "$LOGFILE.tmp" 2> /dev/null && mv "$LOGFILE.tmp" "$LOGFILE"
+	tail -n 5000 "$LOGFILE" > "$LOGFILE.tmp" 2> /dev/null && mv "$LOGFILE.tmp" "$LOGFILE"
 	
 	getVerbose && echoTitle " end of script "
 	
