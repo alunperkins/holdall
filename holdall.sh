@@ -79,7 +79,7 @@ echoTitle(){
 }
 readableDate(){
 	local dateInSecondSinceEpoch=$1
-	return date --date=@$dateInSecondSinceEpoch +%c
+	echo $(date --date=@$dateInSecondSinceEpoch +%c)
 }
 diffItems(){
 	local itemHostLoc="$1"
@@ -91,7 +91,7 @@ diffItems(){
 	else
 		itemVersionsDifference=$(diff "$itemHostLoc" "$itemRmvblLoc")
 	fi
-	return "$itemVersionsDifference"
+	echo "$itemVersionsDifference"
 }
 noRsync(){ # NOT TESTED =P
 	echo $ERRORMESSAGENoRsync
