@@ -12,7 +12,8 @@ readonly OVRDHOSTTORMVBL=2
 readonly OVRDRMVBLTOHOST=8
 readonly OVRDSYNC=s
 readonly OVRDERASERECORD=e
-readonly OVRDMERGE=m
+readonly OVRDMERGEHOSTTORMVBL=MHTR
+readonly OVRDMERGERMVBLTOHOST=MRTH
 
 readonly DIRECTIONRMVBLTOHOST=SDRTH
 readonly DIRECTIONHOSTTORMVBL=SDHTR
@@ -129,38 +130,38 @@ modTimeOf(){
 	
 	echo $itemModTime
 }
-rsyncFileOrFolderWrapper(){
-	# We need to rsync slightly differently for a file than for a folder.
-	# This wrapper handles the branching of the rsync command.
-	# Callers can invoke this function WITHOUT HAVING TO TEST if they're copying a file or a folder.
-	# it also wraps a "touch" command to keep mod times in sync
-	local optsStandard="$1"
-	local optsQuoted="$2"
-	local sourceLoc="$3"
-	local destLoc="$4"
-	local copyExitVal=""
-	
-	# debug
-	echo "entered rsyncFileOrFolderWrapper"
-	echo "optsStandard=$optsStandard"
-	echo "optsQuoted=$optsQuoted"
-	echo "sourceLoc=$sourceLoc"
-	echo "destLoc=$destLoc"
-	
-	if [[ -d "$sourceLoc" ]] # if a directory
-	then
-		getPermission "want to call rsync $optsStandard $optsQuoted $sourceLoc/ $destLoc" && rsync $optsStandard "$optsQuoted" "$sourceLoc"/ "$destLoc"
-		copyExitVal=$?
-		
-		# but this leaves the destination's top-level dir modification time to be 
-		# NOW instead of that of the source, so sync this final datum before finishing
-		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
-	else # if a file
-		getPermission "want to call rsync $optsStandard $optsQuoted $sourceLoc $destLoc" && rsync $optsStandard "$optsQuoted" "$sourceLoc" "$destLoc"
-		copyExitVal=$?
-	fi
-	return $copyExitVal
-}
+# rsyncFileOrFolderWrapper(){
+# 	# We need to rsync slightly differently for a file than for a folder.
+# 	# This wrapper handles the branching of the rsync command.
+# 	# Callers can invoke this function WITHOUT HAVING TO TEST if they're copying a file or a folder.
+# 	# it also wraps a "touch" command to keep mod times in sync
+# 	local optsStandard="$1"
+# 	local optsQuoted="$2"
+# 	local sourceLoc="$3"
+# 	local destLoc="$4"
+# 	local copyExitVal=""
+# 	
+# 	# debug
+# 	echo "entered rsyncFileOrFolderWrapper"
+# 	echo "optsStandard=$optsStandard"
+# 	echo "optsQuoted=$optsQuoted"
+# 	echo "sourceLoc=$sourceLoc"
+# 	echo "destLoc=$destLoc"
+# 	
+# 	if [[ -d "$sourceLoc" ]] # if a directory
+# 	then
+# 		getPermission "want to call rsync $optsStandard $optsQuoted $sourceLoc/ $destLoc" && rsync $optsStandard "$optsQuoted" "$sourceLoc"/ "$destLoc"
+# 		copyExitVal=$?
+# 		
+# 		# but this leaves the destination's top-level dir modification time to be 
+# 		# NOW instead of that of the source, so sync this final datum before finishing
+# 		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
+# 	else # if a file
+# 		getPermission "want to call rsync $optsStandard $optsQuoted $sourceLoc $destLoc" && rsync $optsStandard "$optsQuoted" "$sourceLoc" "$destLoc"
+# 		copyExitVal=$?
+# 	fi
+# 	return $copyExitVal
+# }
 
 showHelp(){
 	cat <<- _EOF_
@@ -357,17 +358,6 @@ scanLocsList(){
 	done <<< "$listOfLocations"
 	
 	return 0
-	# return 0 if no repeats were found
-	#if [[ (-z $listOfRepeatedNames) && (-z $listOfRepeatedLocations) ]]; then return 0; fi
-	## else complain and exit
-	#echo ""
-	#echo "error: there are repeated names and/or repeated locations in $LOCSLIST"
-	#echo "repeated names:"
-	#echo $listOfRepeatedNames
-	#echo "repeated locations:"
-	#echo $listOfRepeatedLocations
-	#echo "please remove the duplicates by editing the file $LOCSLIST"
-	#exit 9;
 }
 createLocsListTemplateDialog(){
 	echo "The locations-list file $LOCSLIST does not exist."
@@ -650,23 +640,25 @@ syncSourceToDest(){
 	fi
 	getPretend && longOpts="$longOpts --dry-run" # if pretending make rsync pretend too    # note: rsync --dry-run does not always _entirely_ avoid writing to disk...?
 	
-	local opts="$shortOpts $longOpts"
-	rsyncFileOrFolderWrapper "$opts" "$longOptBackup" "$sourceLoc" "$destLoc" # opts that shouldn't be quoted and that must be quoted need to be passed separately
+# 	local opts="$shortOpts $longOpts"
+# 	rsyncFileOrFolderWrapper "$opts" "$longOptBackup" "$sourceLoc" "$destLoc" # opts that shouldn't be quoted and that must be quoted need to be passed separately
 	
+	# rsync FILE/FOLDER BRANCHING BLOCK
 	# for proper behaviour with directories need a slash after the source, but with files this syntax would be invalid
-	#if [[ -d "$sourceLoc" ]] # if it is a directory
-	#then
-	#	getPermission "want to call rsync $shortOpts $longOpts $longOptBackup $sourceLoc/ $destLoc" && rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc"/ "$destLoc"
-	#	copyExitVal=$?
-	#	
-	#	# but this leaves the destination's top-level dir modification time to be 
-	#	# NOW instead of that of the source, so sync this final datum before finishing
-	#	getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
-	#	
-	#else # if it is a file
-	#	getPermission "want to call rsync $shortOpts $longOpts $longOptBackup $sourceLoc $destLoc" && rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc" "$destLoc"
-	#	copyExitVal=$?
-	#fi
+	if [[ -d "$sourceLoc" ]] # if it is a directory
+	then
+		getPermission "want to call rsync $shortOpts $longOpts $longOptBackup $sourceLoc/ $destLoc" && rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc"/ "$destLoc"
+		copyExitVal=$?
+		
+		# but this leaves the destination's top-level dir modification time to be 
+		# NOW instead of that of the source, so sync this final datum before finishing
+		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
+		
+	else # if it is a file
+		getPermission "want to call rsync $shortOpts $longOpts $longOptBackup $sourceLoc $destLoc" && rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc" "$destLoc"
+		copyExitVal=$?
+	fi
+	# END rsync FILE/FOLDER BRANCHING BLOCK
 	
 	getVerbose && echo "copy complete"
 	
@@ -771,8 +763,40 @@ merge(){
 	esac
 }
 mergeSourceToDest(){
-	echo "not implemented"
-	return 1
+	local sourceLoc="$1"
+	local destLoc="$2"
+	local copyExitVal=""
+	
+	# safety exit for people testing changes to the code - once while I was testing new code a broken command caused rsync to nearly delete work (retrieved the work from the --backup-dir folder though)
+	if [[ (-z $sourceLoc) || (-z $destLoc) ]]; then echo "UNKNOWN ERROR: mergeSourceToDest was passed a blank argument. Exiting to prevent data loss"; exit 104; fi
+	
+	# set the options string for rsync
+	local shortOpts="-rtgopub" # short options always used - note uses u (update) and b (backup)
+	getVerbose && shortOpts="$shortOpts"v # if verbose then make rsync verbose too
+	local longOpts="--suffix=-removed-$(date +%F-%H%M)~"
+	getPretend && longOpts="$longOpts --dry-run" # if pretending make rsync pretend too    # note: rsync --dry-run does not always _entirely_ avoid writing to disk...?
+	
+	# rsync FILE/FOLDER BRANCHING BLOCK
+	# for proper behaviour with directories need a slash after the source, but with files this syntax would be invalid
+	if [[ -d "$sourceLoc" ]] # if it is a directory
+	then
+		getPermission "want to call rsync $shortOpts $longOpts $sourceLoc/ $destLoc" && rsync $shortOpts $longOpts "$sourceLoc"/ "$destLoc"
+		copyExitVal=$?
+		
+		# but this leaves the destination's top-level dir modification time to be 
+		# NOW instead of that of the source, so sync this final datum before finishing
+		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
+		
+	else # if it is a file
+		getPermission "want to call rsync $shortOpts $longOpts $sourceLoc $destLoc" && rsync $shortOpts $longOpts "$sourceLoc" "$destLoc"
+		copyExitVal=$?
+	fi
+	# END rsync FILE/FOLDER BRANCHING BLOCK
+	
+	getVerbose && echo "copy complete"
+	
+	if [[ $copyExitVal -ne 0 ]]; then echo "WARNING: copy command returned error - exit status $copyExitVal - assuming complete failure"; fi
+	return $copyExitVal
 }
 
 readOptions(){
