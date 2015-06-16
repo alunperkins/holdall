@@ -855,6 +855,7 @@ main(){
 	echo "syncing with [removable drive] directory $RMVBLDIR"
 	# name of log file
 	readonly LOGFILE="$RMVBLDIR/syncLog"
+	echoToLog "START SYNC"
 	
 	# check the locations-list file is ready
 	if [[ -z "$CUSTOMLOCATIONSFILE" ]]
