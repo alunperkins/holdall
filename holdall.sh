@@ -1157,9 +1157,9 @@ main(){
 						# the fact that this host is not on the up-to-date list means that the mod from anthrhst is the latest version.
 						# ! ! ! ! UNLESS the sync with anthrhst was a resolution of a forked version ! ! ! !
 						# which would mean that this sync is currently looking at forked versions too...
-						# assume not...
-						# sync removable drive onto host
-						synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+						echo "$itemName: Note: If you have recently resolved a fork for this item then at this time the host and removable drive versions MAY ALSO be forked versions."
+						echoToLog "$itemName, Note: If you have recently resolved a fork for this item then at this time the host and removable drive versions MAY ALSO be forked versions."
+						getPermission "want to assume no recent forking problems and proceed with syncing removable drive onto host" && synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 					else
 						# BRANCH END
 						# the order of events is: mod on removable, mod on host, sync with removable
