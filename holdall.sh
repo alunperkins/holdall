@@ -1145,15 +1145,45 @@ main(){
 					fi
 					echo "$itemName: skipping"
 				else
-					# BRANCH END
-					# status in file contradicts the state on disk
-					# (because it shows that we synced with this host AFTER last mod, 
-					#                      so how come this host isn't on the up-to-date list?)
-					echo "$itemName: $WARNINGUnexpectedlyNotOnUpToDateList"
-					echoToLog "$itemName, $WARNINGUnexpectedlyNotOnUpToDateList"
-					echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
-					# offer override
-					chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+					if [[ $itemRmvblModTime -gt $itemHostModTime ]]
+					then
+						# BRANCH END
+						# the order of events is: mod on host, mod on removable, sync this host with removable, syncing now
+						# but crucially the this host is not on the up-to-date list.
+						# so have history: a modification was made on another up-to-date host we'll call anthrhst. This host and removable drive were synced. 
+						# Then anthrhst and removable drive were synced, which puts onto the drive the modification from anthrhst which 
+						# is dated BEFORE the sync of this host and the removable drive.
+						
+						# the fact that this host is not on the up-to-date list means that the mod from anthrhst is the latest version.
+						# ! ! ! ! UNLESS the sync with anthrhst was a resolution of a forked version ! ! ! !
+						# which would mean that this sync is currently looking at forked versions too...
+						# assume not...
+						# sync removable drive onto host
+						synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+					else
+						# BRANCH END
+						# the order of events is: mod on removable, mod on host, sync with removable
+						# but crucially the this host IS on the up-to-date list.
+						# I think this means that the work has been forked.
+						
+						echo "$itemName: $WARNINGFork"
+						echoToLog "$itemName, $WARNINGFork"
+						echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
+						# offer override
+						chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+						continue
+						
+						# ---- this section USED to simply say things were unclear instead of differentiating between the [[ $itemRmvblModTime -gt $itemHostModTime ]] true or false cases ---
+						# # BRANCH END
+						# # status in file contradicts the state on disk
+						# # (because it shows that we synced with this host AFTER last mod, 
+						# #                      so how come this host isn't on the up-to-date list?)
+						# echo "$itemName: $WARNINGUnexpectedlyNotOnUpToDateList"
+						# echoToLog "$itemName, $WARNINGUnexpectedlyNotOnUpToDateList"
+						# echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
+						# # offer override
+						# chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+					fi
 				fi
 				continue
 			fi
