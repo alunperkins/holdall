@@ -1159,7 +1159,7 @@ main(){
 						# which would mean that this sync is currently looking at forked versions too...
 						echo "$itemName: Note: If you have recently resolved a fork for this item then at this time the host and removable drive versions MAY ALSO be forked versions."
 						echoToLog "$itemName, Note: If you have recently resolved a fork for this item then at this time the host and removable drive versions MAY ALSO be forked versions."
-						getPermission "want to assume no recent forking problems and proceed with syncing removable drive onto host" && synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+						getPermission "want to assume no recent forking problems and proceed with syncing removable drive onto host" && synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" || chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 					else
 						# BRANCH END
 						# the order of events is: mod on removable, mod on host, sync with removable
