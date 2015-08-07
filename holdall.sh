@@ -677,7 +677,8 @@ syncSourceToDest(){
 	# for proper behaviour with directories need a slash after the source, but with files this syntax would be invalid
 	if [[ -d "$sourceLoc" ]] # if it is a directory
 	then
-		getPermission "want to call rsync $shortOpts $longOpts $longOptBackup $sourceLoc/ $destLoc" && rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc"/ "$destLoc"
+		# getPermission "want to call rsync $shortOpts $longOpts $longOptBackup $sourceLoc/ $destLoc" && \
+		rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc"/ "$destLoc"
 		copyExitVal=$?
 		
 		# but this leaves the destination's top-level dir modification time to be 
@@ -685,7 +686,8 @@ syncSourceToDest(){
 		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
 		
 	else # if it is a file
-		getPermission "want to call rsync $shortOpts $longOpts $longOptBackup $sourceLoc $destLoc" && rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc" "$destLoc"
+		# getPermission "want to call rsync $shortOpts $longOpts $longOptBackup $sourceLoc $destLoc" && \
+		rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc" "$destLoc"
 		copyExitVal=$?
 	fi
 	# END rsync FILE/FOLDER BRANCHING BLOCK
@@ -811,7 +813,8 @@ mergeSourceToDest(){
 	# for proper behaviour with directories need a slash after the source, but with files this syntax would be invalid
 	if [[ -d "$sourceLoc" ]] # if it is a directory
 	then
-		getPermission "want to call rsync $shortOpts $longOpts $sourceLoc/ $destLoc" && rsync $shortOpts $longOpts "$sourceLoc"/ "$destLoc"
+		# getPermission "want to call rsync $shortOpts $longOpts $sourceLoc/ $destLoc" && \
+		rsync $shortOpts $longOpts "$sourceLoc"/ "$destLoc"
 		copyExitVal=$?
 		
 		# but this leaves the destination's top-level dir modification time to be 
@@ -819,7 +822,8 @@ mergeSourceToDest(){
 		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
 		
 	else # if it is a file
-		getPermission "want to call rsync $shortOpts $longOpts $sourceLoc $destLoc" && rsync $shortOpts $longOpts "$sourceLoc" "$destLoc"
+		# getPermission "want to call rsync $shortOpts $longOpts $sourceLoc $destLoc" && \
+		rsync $shortOpts $longOpts "$sourceLoc" "$destLoc"
 		copyExitVal=$?
 	fi
 	# END rsync FILE/FOLDER BRANCHING BLOCK
@@ -1103,14 +1107,18 @@ main(){
 					echoToLog "$itemName, removable drive version was modified directly - change appeared not from a host"
 					# but that's fine, proceed.
 					# sync removable drive onto host
-					synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+					getPermission "want to sync removable >>> to >>> host" \
+						&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" \
+						|| chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 				else
 					# BRANCH END
 					# then have history: modded here > synced to removable drive > removable drive accepted change from elsewhere (possibly directly instead of from a host)
 					getVerbose && echo "removable drive has been modified since last sync (and host hasn't)"
 					# so update this host with that change
 					# sync removable drive onto host
-					synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+					getPermission "want to sync removable >>> to >>> host" \
+						&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" \
+						|| chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 				fi
 				continue
 			fi
@@ -1123,7 +1131,9 @@ main(){
 					getVerbose && echo "host has been modified since last sync (and removable drive hasn't)"
 					# so update the removable drive with the changes made on this host
 					# sync host to removable drive
-					synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+					getPermission "want to sync host >>> to >>> removable" \
+						&& synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc" \
+						|| chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 				else
 					# BRANCH END
 					# item has been forked
