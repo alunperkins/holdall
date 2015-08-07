@@ -5,19 +5,22 @@ readonly PROGNAME=$(basename $0)
 readonly PROGDIR=$(readlink -m $(dirname $0))
 readonly DEFAULTNOOFBACKUPSTOKEEP=2
 
+# letters for user to type to make menu selections - so make them easy and intuitive
 readonly YES=y
 readonly CANCEL=n
 readonly NOOVRD=x
 readonly OVRDHOSTTORMVBL=2
 readonly OVRDRMVBLTOHOST=8
+readonly OVRDMERGEHOSTTORMVBL=4
+readonly OVRDMERGERMVBLTOHOST=6
 readonly OVRDSYNC=s
 readonly OVRDERASERECORD=e
-readonly OVRDMERGEHOSTTORMVBL=MHTR
-readonly OVRDMERGERMVBLTOHOST=MRTH
 
+# unique letter codes for passing arguments (not seen by user)
 readonly DIRECTIONRMVBLTOHOST=SDRTH
 readonly DIRECTIONHOSTTORMVBL=SDHTR
 
+# error messages - explain why the program quits
 readonly ERRORMESSAGENoRsync="error: rsync is not installed on the system. This program uses rsync. Use your package manager to install it."
 readonly ERRORMESSAGENoOfArgs="error: wrong number of arguments provided - use $PROGNAME -h for help. "
 readonly ERRORMESSAGEUnreadableLocsList="error: errorPermissionsLocsList: couldn't read the locations-list file."
@@ -27,6 +30,7 @@ readonly ERRORMESSAGEUnreadableRmvbl="error: errorPermissionsRmvbl: removable dr
 readonly ERRORMESSAGEUnwritableRmvbl="error: errorPermissionsRmvbl: removable drive directory unwritable. "
 readonly ERRORMESSAGEPermissionsSyncStatusFile="error: errorPermissionsSyncStatusFile: could not read/write syncStatusFile. "
 
+# warning messages - explain why current item can't be synced
 readonly WARNINGSyncStatusForNonexistentItems="Warning: This item does not exist on this host or the removable drive but the status file says it should."
 readonly WARNINGNonexistentItems="Warning: This item does not exist on this host or the removable drive. "
 readonly WARNINGStatusInconsistent="Warning: The sync status for this item is invalid: This host is stated as being up-to-date with changes but there is no synchronisation date. "
@@ -46,6 +50,9 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 
 # ---------- TO DO ----------
 # implement checking if an itemHostLoc is a subfolder of itemRmvblLoc, or vice-versa
+# make interactive mode give a chooseVersionDialog if user vetoes the default action
+#    (currently it is default or nothing. It is stupid. Obviously this isn't useful.)
+# code and messages need tidying again, they've grown too large.
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
@@ -56,7 +63,9 @@ getVerbose(){
 	if [[ $VERBOSE == "on" ]]; then return 0; else return 1; fi 
 }
 getPermission(){
-	if [[ $INTERACTIVEMODE == "off" ]]; then return 0; fi # if we're not in interactive mode then simply return true
+	# if we're not in interactive mode then simply return true
+	if [[ $INTERACTIVEMODE == "off" ]]; then return 0; fi 
+	# else we are in interactive mode so ask for permission
 	local prompt="$1"
 	echo "    $prompt"
 	local input=""
@@ -71,19 +80,19 @@ getPermission(){
 	fi
 }
 
-echoToLog(){
+echoToLog(){ # echo $1 to log with a timestamp and hostname
 	getPretend || echo "$(date +%F,%R), $HOSTNAME, $1" >> $LOGFILE
 }
-echoTitle(){
+echoTitle(){ # echo $1 with a line of dashes
 	local title=$1
 	echo -n "----"
 	printf "%s%s \n" "$title" ${LOTSOFDASHES:0:(($(tput cols)-${#title}-20))}
 }
-readableDate(){
+readableDate(){ # convert seconds-since-epoch to human-readable
 	local dateInSecondSinceEpoch=$1
 	echo $(date --date=@$dateInSecondSinceEpoch +%c)
 }
-diffItems(){
+diffItems(){ # return diff $1 $2
 	local itemHostLoc="$1"
 	local itemRmvblLoc="$2"
 	local itemVersionsDifference=""
@@ -95,7 +104,7 @@ diffItems(){
 	fi
 	echo "$itemVersionsDifference"
 }
-noRsync(){ # NOT TESTED =P
+noRsync(){ # deal with lack of rsync - NOT TESTED =P
 	echo $ERRORMESSAGENoRsync
 	exit 3
 }
@@ -162,6 +171,7 @@ modTimeOf(){
 # 	fi
 # 	return $copyExitVal
 # }
+# rsyncFileOrFolderWrapper - COULDN'T MAKE THIS WORK :(
 
 showHelp(){
 	cat <<- _EOF_
@@ -171,8 +181,6 @@ showHelp(){
 	computers privately or over an "air-gap", using a removable drive.
 	e.g. files/folders on one system are synchronised with a removable drive,
 	     and then the removable drive is synchronised with the second system.
-	
-	$PROGNAME can synchronise computers over an "air-gap", e.g. with computers that do not have internet access.
 	Crucially, $PROGNAME will detect problems e.g. if a file has been forked between different computers.
 	
 	$PROGNAME uses rsync and by default the "--backup-dir" option is used, such that $DEFAULTNOOFBACKUPSTOKEEP synchronisations can be manually reverted.
@@ -200,7 +208,7 @@ showHelp(){
 
 	THE LOCATIONS-LIST FILE:
 	On the removable drive there is a separate locations-list file for each computer you sync with.
-	The default filename for this host is syncLocationsOn_$HOSTNAME
+	(The default filename for this host is syncLocationsOn_$HOSTNAME)
 	Inside the locations of folders/files to sync are listed, one per line.
 	To copy a folder/file to a different name you can give the alternate name after a "|" delimiter - see example 2 below:
 	TWO EXAMPLES:
@@ -222,7 +230,7 @@ usage(){
 
 cleanCommentsAndWhitespace(){
 	local inputFile="$1"
-	# three stetps to clean the input
+	# three steps to clean the input
 	# 1. remove comments - grep to keep only the parts of the line before any #
 	# 2. remove leading whitespace - sed to replace leading whitespace with nothing
 	# 3. remove trailing whitespace - sed to replace trailing whitespace with nothing
@@ -373,37 +381,40 @@ createLocsListTemplateDialog(){
 	read -p '   > ' input 
 	if [[ $input == $YES ]]
 	then
-		getPretend && return 0
-		# a here script
-		cat <<- _EOF_ >$LOCSLIST
-		# this file is for use with the synchronisation program $PROGNAME (in $PROGDIR)
-		# This file supports comments on a line after a #.
-		# give the locations of files and folders you wish to sync.
-		# One item per line, format: 'address|name', where optional '|name' is used to sync things to a different name
-		# 
-		# --- help and examples ---
-		# two examples:
-		# /home/somewhere/correspondence             # this would sync  /home/somewhere/correspondence  with  /<location of removable drive>/correspondence
-		# /home/somewhere/someOldReports|workStuff   # this would sync  /home/somewhere/someOldReports  with  /<location of removable drive>/workStuff
-		# (where  /<location of removable drive>/ should be the location of your removable drive, specified as the argument to $PROGNAME)
-		# for help see: $PROGNAME -h
-		# 
-		# ---(some more examples)---
-		# /home/mike/payslips 
-		# /home/mike/work/spreadsheets    # because I can't work without them!
-		# /home/mike/Documents/contactsList.xml 
-		# /home/mike/Documents/systemspecs.pdf|systemspecsOf$HOSTNAME.pdf 
-		# /home/mike/Documents/myScripts 
-		# /media/internalHDD/myScripts|myScriptsHDD 
-		# /media/internalHDD/Pictures/motivationalPosters 
-		# /home/mike/work/stupidReport.pdf|importantReading.pdf 
-		# ---(end of examples)---
-		_EOF_
+		createLocsListTemplate
 		echo "new file created."
 		echoToLog "created template locs list file $LOCSLIST"
 	else
 		echo "not generating a file"
 	fi
+}
+createLocsListTemplate(){
+	getPretend && return 0
+	# a here script
+	cat <<- _EOF_ >$LOCSLIST
+	# this file is for use with the synchronisation program $PROGNAME (in $PROGDIR)
+	# This file supports comments on a line after a #.
+	# give the locations of files and folders you wish to sync.
+	# One item per line, format: 'address|name', where optional '|name' is used to sync things to a different name
+	# 
+	# --- help and examples ---
+	# two examples:
+	# /home/somewhere/correspondence             # this would sync  /home/somewhere/correspondence  with  /<location of removable drive>/correspondence
+	# /home/somewhere/someOldReports|workStuff   # this would sync  /home/somewhere/someOldReports  with  /<location of removable drive>/workStuff
+	# (where  /<location of removable drive>/ should be the location of your removable drive, specified as the argument to $PROGNAME)
+	# for help see: $PROGNAME -h
+	# 
+	# ---(some more examples)---
+	# /home/mike/payslips 
+	# /home/mike/work/spreadsheets    # because I can't work without them!
+	# /home/mike/Documents/contactsList.xml 
+	# /home/mike/Documents/systemspecs.pdf|systemspecsOf$HOSTNAME.pdf 
+	# /home/mike/Documents/myScripts 
+	# /media/internalHDD/myScripts|myScriptsHDD 
+	# /media/internalHDD/Pictures/motivationalPosters 
+	# /home/mike/work/stupidReport.pdf|importantReading.pdf 
+	# ---(end of examples)---
+	_EOF_
 }
 noSyncStatusFileDialog(){
 	echo "could not find sync data file $SYNCSTATUSFILE."
@@ -469,6 +480,11 @@ chooseVersionDialog(){
 	local itemSyncTime=$6
 	local itemSyncTimeReadable=$(readableDate $itemSyncTime)
 	
+	# DEBUG
+	echo DEBUG itemHostModTimeReadable=$itemHostModTimeReadable
+	echo DEBUG itemRmvblModTimeReadable=$itemRmvblModTimeReadable
+	echo DEBUG itemSyncTimeReadable=$itemSyncTimeReadable
+	
 	if [[ $AUTOMATIC == "on" ]]
 	then
 		echo -n "Automatic mode on > "
@@ -508,20 +524,39 @@ chooseVersionDialog(){
 		echo "   $NOOVRD to take no action this time (re-run to see this dialog again)"
 		echo "   $OVRDHOSTTORMVBL to sync the host copy onto the removable drive copy"
 		echo "   $OVRDRMVBLTOHOST to sync the removable drive copy onto the host copy"
+		echo "   $OVRDMERGEHOSTTORMVBL to merge the host copy into the removable drive copy"
+		echo "   $OVRDMERGERMVBLTOHOST to merge the removable drive copy into the host copy"
 		local input=""
 		read -p '   > ' input </dev/tty
-		if [[ $input == $OVRDHOSTTORMVBL ]]
-		then
-			synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
-		else
-			if [[ $input == $OVRDRMVBLTOHOST ]]
-			then
+		case $input in
+			$OVRDHOSTTORMVBL)
+				synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+				;;
+			$OVRDRMVBLTOHOST)
 				synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
-			else
+				;;
+			$OVRDMERGEHOSTTORMVBL)
+				merge "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+				;;
+			$OVRDMERGERMVBLTOHOST)
+				merge "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+				;;
+			*)
 				echo "$itemName: taking no action"
-			fi
-		fi # end if [ ...user input... ]
-	fi # end if [ automatic mode ]
+				;;
+		esac
+		# if [[ $input == $OVRDHOSTTORMVBL ]]
+		# then
+			# synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+		# else
+			# if [[ $input == $OVRDRMVBLTOHOST ]]
+			# then
+				# synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+			# else
+				# echo "$itemName: taking no action"
+			# fi
+		# fi # endif [ ...user input... ]
+	fi # endif [ automatic mode ]
 }
 unexpectedAbsenceDialog(){
 	local itemName="$1"
@@ -745,14 +780,14 @@ merge(){
 			echo "$itemName: $MESSAGESyncingHostToRmvbl"
 			mergeSourceToDest "$itemHostLoc" "$itemRmvblLoc"
 			local copyExitVal=$?
-			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $syncDirection; fi
+			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
 			echoToLog "$itemHostLoc, merged to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			;;
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGESyncingRmvblToHost"
 			mergeSourceToDest "$itemRmvblLoc" "$itemHostLoc"
 			local copyExitVal=$?
-			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $syncDirection; fi
+			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
 			echoToLog "$itemRmvblLoc, merged to, $itemHostLoc, copy exit status=$copyExitVal"
 			;;
 		*)
@@ -768,10 +803,11 @@ mergeSourceToDest(){
 	local copyExitVal=""
 	
 	# safety exit for people testing changes to the code - once while I was testing new code a broken command caused rsync to nearly delete work (retrieved the work from the --backup-dir folder though)
+	# NO. DUDE literally just use set -e ...?
 	if [[ (-z $sourceLoc) || (-z $destLoc) ]]; then echo "UNKNOWN ERROR: mergeSourceToDest was passed a blank argument. Exiting to prevent data loss"; exit 104; fi
 	
 	# set the options string for rsync
-	local shortOpts="-rtgopub" # short options always used - note uses u (update) and b (backup)
+	local shortOpts="-rtgopb" # short options always used - note uses u (update) and b (backup)
 	getVerbose && shortOpts="$shortOpts"v # if verbose then make rsync verbose too
 	local longOpts="--suffix=-removed-$(date +%F-%H%M)~"
 	getPretend && longOpts="$longOpts --dry-run" # if pretending make rsync pretend too    # note: rsync --dry-run does not always _entirely_ avoid writing to disk...?
