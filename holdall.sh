@@ -480,11 +480,6 @@ chooseVersionDialog(){
 	local itemSyncTime=$6
 	local itemSyncTimeReadable=$(readableDate $itemSyncTime)
 	
-	# DEBUG
-	echo DEBUG itemHostModTimeReadable=$itemHostModTimeReadable
-	echo DEBUG itemRmvblModTimeReadable=$itemRmvblModTimeReadable
-	echo DEBUG itemSyncTimeReadable=$itemSyncTimeReadable
-	
 	if [[ $AUTOMATIC == "on" ]]
 	then
 		echo -n "Automatic mode on > "
@@ -622,8 +617,8 @@ synchronise(){
 	local itemHostLoc="$3"
 	local itemRmvblLoc="$4"
 	
-	echoToLog "$itemName, difference: "
-	echoToLog "$(diffItems "$itemHostLoc" "$itemRmvblLoc")"
+	# echoToLog "$itemName, difference: "
+	# echoToLog "$(diffItems "$itemHostLoc" "$itemRmvblLoc")" # slow and uneccessary
 	
 	case $syncDirection in
 		$DIRECTIONHOSTTORMVBL)
@@ -772,8 +767,8 @@ merge(){
 	local itemHostLoc="$3"
 	local itemRmvblLoc="$4"
 	
-	echoToLog "$itemName, difference: "
-	echoToLog "$(diffItems "$itemHostLoc" "$itemRmvblLoc")"
+	# echoToLog "$itemName, difference: "
+	# echoToLog "$(diffItems "$itemHostLoc" "$itemRmvblLoc")" # slow and uneccessary
 	
 	case $mergeDirection in
 		$DIRECTIONHOSTTORMVBL)
