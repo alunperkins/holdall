@@ -243,7 +243,8 @@ cleanCommentsAndWhitespace(){
 }
 addLocation(){
 	local locationToAdd="$1"
-	getPermission "append $locationToAdd to locations-list file?" && (getPretend || echo "$locationToAdd" >> $LOCSLIST)
+	echo appending the text "'$locationToAdd'" as a line at the end of the locations-list file
+	getPermission "Is that correct?" && (getPretend || echo "$locationToAdd" >> $LOCSLIST)
 	return $?
 }
 listLocsListContents(){
