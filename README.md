@@ -72,7 +72,7 @@ Understanding the locations-list file(s) with an example
 Inside a locations-list file are locations of folders/files, one per line.
 To copy a folder/file to a different name you can give the alternate name after a "|" delimiter.
 
-Take an example.  
+Take an example - there a diagram for this example - take a look, it's the image file usingLocationsListFile_MikeExample.png.
 A user, Mike, synchronises his work computer (hostname employee297) with the removable drive.
 The locations-list file is "syncLocationsOn_employee297" and he has written and saved two lines in it:  
  - /home/reports
@@ -98,8 +98,6 @@ The locations-list file is "syncLocationsOn_mikePC" and he put in it
  - /home/pictures  
 
 Which ensures that "/home/pictures" is kept in sync with the folder "/home/personal/pictures" on his laptop.
-
-Have a look at the diagram for this example - it's the image file.
 
 Running holdall
 -----------
