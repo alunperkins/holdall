@@ -53,6 +53,8 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # make interactive mode give a chooseVersionDialog if user vetoes the default action
 #    (currently it is default or nothing. It is stupid. Obviously this isn't useful.)
 # code and messages need tidying again, they've grown too large.
+# need to review behaviour re. sync vs. merge conflicted files (as opposed to folders) - may not be behaving in a transparent way
+# add a status mode where it prints the sync status of every item on the removable drive re. hosts, etc.
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
@@ -714,8 +716,9 @@ removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not w
 		getVerbose && rmOptsString="$rmOptsString"v
 		ls -d "$locationStem"-removed* | sort | head --lines=-$NOOFBACKUPSTOKEEP | while read oldBackupName # loop over expired backups
 		do
-			echo "removing old backup $oldBackupName"
-			getPermission "want to call rm $rmOptsString $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
+			getVerbose && echo "removing old backup $oldBackupName"
+			#getPermission "want to call rm $rmOptsString $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
+			getPermission "want to remove old backup $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
 		done
 	fi
 }
@@ -764,6 +767,7 @@ writeToStatus(){
 merge(){
 	# similar to a normal sync, this function handles the multiple steps involved in a merge
 	# 1. Merging with rsync in mergeSourceToDest  2. updating the status
+	# NOTE: do merges make sense when talking about files, rather than folders?
 	
 	local itemName="$1"
 	local mergeDirection=$2
