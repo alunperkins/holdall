@@ -173,7 +173,7 @@ modTimeOf(){
 # 	fi
 # 	return $copyExitVal
 # }
-# rsyncFileOrFolderWrapper - COULDN'T MAKE THIS WORK :(
+# rsyncFileOrFolderWrapper - COULDN'T MAKE THIS WORK due to issues with passing arguments that may be blank or contain spaces, etc. Decided that, therefore, eventual working code would not be clear. Decided against this plan.
 
 showHelp(){
 	cat <<- _EOF_
@@ -245,7 +245,7 @@ cleanCommentsAndWhitespace(){
 }
 addLocation(){
 	local locationToAdd="$1"
-	echo appending the text "'$locationToAdd'" as a line at the end of the locations-list file
+	echo appending the text "'$locationToAdd'" as a line at the end of the locations-list file.
 	getPermission "Is that correct?" && (getPretend || echo "$locationToAdd" >> $LOCSLIST)
 	return $?
 }
@@ -374,7 +374,7 @@ createLocsListTemplateDialog(){
 	echo "The locations-list file $LOCSLIST does not exist."
 	if [[ $AUTOMATIC == "on" ]]
 	then
-		echo automatic mode set - skipping dialog asking to create a template locations-list file
+		echo "automatic mode set - skipping dialog asking to create a template locations-list file"
 		return 0
 	fi
 	echo "   You can generate a new template locations-list file at $LOCSLIST"
@@ -472,7 +472,7 @@ eraseItemFromStatusFile(){
 	grep -v '^\s*$' <"$SYNCSTATUSFILE" | sort >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE"
 	echoToLog "$itemName, erased from sync data file"
 }
-chooseVersionDialog(){
+chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemRmvblLoc 5)itemRmvblModTime 6)itemSyncTime
 	local itemName="$1"
 	local itemHostLoc="$2"
 	local itemHostModTime=$3
@@ -543,17 +543,6 @@ chooseVersionDialog(){
 				echo "$itemName: taking no action"
 				;;
 		esac
-		# if [[ $input == $OVRDHOSTTORMVBL ]]
-		# then
-			# synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
-		# else
-			# if [[ $input == $OVRDRMVBLTOHOST ]]
-			# then
-				# synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
-			# else
-				# echo "$itemName: taking no action"
-			# fi
-		# fi # endif [ ...user input... ]
 	fi # endif [ automatic mode ]
 }
 unexpectedAbsenceDialog(){
@@ -651,6 +640,7 @@ synchronise(){
 }
 
 syncSourceToDest(){
+	# has two structures for "getPretend" - one style prevents executing commands, the other style is always executing rsync but passing the "Pretend" setting forward into rsync --dry-run.
 	local sourceLoc="$1"
 	local destLoc="$2"
 	local copyExitVal=""
@@ -671,7 +661,7 @@ syncSourceToDest(){
 	else
 		local longOptBackup=""
 	fi
-	getPretend && longOpts="$longOpts --dry-run" # if pretending make rsync pretend too    # note: rsync --dry-run does not always _entirely_ avoid writing to disk...?
+	getPretend && longOpts="$longOpts --dry-run" # if pretending make rsync pretend too    # note: rsync --dry-run may not always _entirely_ avoid writing to disk...?
 	
 # 	local opts="$shortOpts $longOpts"
 # 	rsyncFileOrFolderWrapper "$opts" "$longOptBackup" "$sourceLoc" "$destLoc" # opts that shouldn't be quoted and that must be quoted need to be passed separately
@@ -680,7 +670,6 @@ syncSourceToDest(){
 	# for proper behaviour with directories need a slash after the source, but with files this syntax would be invalid
 	if [[ -d "$sourceLoc" ]] # if it is a directory
 	then
-		# getPermission "want to call rsync $shortOpts $longOpts $longOptBackup $sourceLoc/ $destLoc" && \
 		rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc"/ "$destLoc"
 		copyExitVal=$?
 		
@@ -689,11 +678,9 @@ syncSourceToDest(){
 		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
 		
 	else # if it is a file
-		# getPermission "want to call rsync $shortOpts $longOpts $longOptBackup $sourceLoc $destLoc" && \
 		rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc" "$destLoc"
 		copyExitVal=$?
-	fi
-	# END rsync FILE/FOLDER BRANCHING BLOCK
+	fi # END rsync FILE/FOLDER BRANCHING BLOCK
 	
 	getVerbose && echo "copy complete"
 	
@@ -717,7 +704,6 @@ removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not w
 		ls -d "$locationStem"-removed* | sort | head --lines=-$NOOFBACKUPSTOKEEP | while read oldBackupName # loop over expired backups
 		do
 			getVerbose && echo "removing old backup $oldBackupName"
-			#getPermission "want to call rm $rmOptsString $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
 			getPermission "want to remove old backup $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
 		done
 	fi
@@ -800,14 +786,11 @@ merge(){
 	esac
 }
 mergeSourceToDest(){
+	# has two structures for "getPretend" - one style prevents executing commands, the other style is always executing rsync but passing the "Pretend" setting forward into rsync --dry-run.
 	local sourceLoc="$1"
 	local destLoc="$2"
 	local copyExitVal=""
-	
-	# safety exit for people testing changes to the code - once while I was testing new code a broken command caused rsync to nearly delete work (retrieved the work from the --backup-dir folder though)
-	# NO. DUDE literally just use set -e ...?
-	if [[ (-z $sourceLoc) || (-z $destLoc) ]]; then echo "UNKNOWN ERROR: mergeSourceToDest was passed a blank argument. Exiting to prevent data loss"; exit 104; fi
-	
+		
 	# set the options string for rsync
 	local shortOpts="-rtgopb" # short options always used - note uses u (update) and b (backup)
 	getVerbose && shortOpts="$shortOpts"v # if verbose then make rsync verbose too
@@ -818,7 +801,6 @@ mergeSourceToDest(){
 	# for proper behaviour with directories need a slash after the source, but with files this syntax would be invalid
 	if [[ -d "$sourceLoc" ]] # if it is a directory
 	then
-		# getPermission "want to call rsync $shortOpts $longOpts $sourceLoc/ $destLoc" && \
 		rsync $shortOpts $longOpts "$sourceLoc"/ "$destLoc"
 		copyExitVal=$?
 		
@@ -827,11 +809,9 @@ mergeSourceToDest(){
 		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
 		
 	else # if it is a file
-		# getPermission "want to call rsync $shortOpts $longOpts $sourceLoc $destLoc" && \
 		rsync $shortOpts $longOpts "$sourceLoc" "$destLoc"
 		copyExitVal=$?
-	fi
-	# END rsync FILE/FOLDER BRANCHING BLOCK
+	fi # END rsync FILE/FOLDER BRANCHING BLOCK
 	
 	getVerbose && echo "copy complete"
 	
@@ -885,7 +865,7 @@ main(){
 		exit 2
 	fi
 	which rsync >/dev/null || noRsync # noRsync deals with eventuality that rsync isn't installed
-	# should also use this method to detect presence of other required programs, just in case.
+	# could also use this method to detect presence of other required programs?
 	
 	# check the removable drive is ready
 	readonly RMVBLDIR=$(readlink -m $1)
@@ -948,6 +928,8 @@ main(){
 		# and also that CHANGES that occur in this loop to variables declared outside, are also local to the loop
 		# nothing that happens in this loop can affect anything in the rest of the script!
 		# it's just for file I/O and user I/O
+		
+		# This loop is in 4 sections. 1)Set the syncing file locations 2)retreive info from status file 3)retrieve info from disk 4)logic and syncing
 		
 		# ------ Step 1: get the item's name and locations ------
 		
@@ -1100,7 +1082,7 @@ main(){
 				continue
 			fi
 			# so:
-			# -------- below here assume $itemSyncedPreviously is true --------
+			# -------- below here $itemSyncedPreviously is true --------
 			
 			if [[ $itemRmvblModTime -gt $itemSyncTime && $itemSyncTime -gt $itemHostModTime ]]
 			then
