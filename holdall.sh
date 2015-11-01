@@ -1148,29 +1148,20 @@ main(){
 				if [[ $hostUpToDateWithItem -eq true ]]
 				then
 					# BRANCH END
-					# then have history: host and removable drive were synced > no changes > now they are being synced again
-					# i.e. no changes since last sync
+					# then have history: host and removable drive were synced > no changes > now they are being synced again, i.e. no changes since last sync
 					# no action needed - except perhaps displaying a message
-					# use diff to confirm both versions are actually the same
 					echo "$itemName: $MESSAGEAlreadyInSync"
-					echo "$itemName: Confirming versions are identical - this may take a few seconds..."
-					local itemVersionsDifference="$(diffItems "$itemHostLoc" "$itemRmvblLoc")"
-					echoToLog "$itemName, difference: "
-					echoToLog "$itemVersionsDifference"
-					#local itemVersionsDifference=""
-					#if [[ -d "$itemRmvblLoc" ]]
-					#then
-					#	itemVersionsDifference=$(diff --brief --recursive "$itemHostLoc" "$itemRmvblLoc") # this can be a bit slow on large directories....
-					#else
-					#	itemVersionsDifference=$(diff "$itemHostLoc" "$itemRmvblLoc")
-					#fi
-					if [[ ! -z $itemVersionsDifference ]]
-					then
-						echo $WARNINGUnexpectedDifference
-						echoToLog "$itemName, $WARNINGUnexpectedDifference"
-						chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
-						continue
-					fi
+					# echo "$itemName: Confirming versions are identical - this may take a few seconds..."
+					# local itemVersionsDifference="$(diffItems "$itemHostLoc" "$itemRmvblLoc")"
+					# echoToLog "$itemName, difference: "
+					# echoToLog "$itemVersionsDifference"
+					# if [[ ! -z $itemVersionsDifference ]]
+					# then
+						# echo $WARNINGUnexpectedDifference
+						# echoToLog "$itemName, $WARNINGUnexpectedDifference"
+						# chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+						# continue
+					# fi
 					echo "$itemName: skipping"
 				else
 					if [[ $itemRmvblModTime -gt $itemHostModTime ]]
@@ -1200,17 +1191,6 @@ main(){
 						# offer override
 						chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 						continue
-						
-						# ---- this section USED to simply say things were unclear instead of differentiating between the [[ $itemRmvblModTime -gt $itemHostModTime ]] true or false cases ---
-						# # BRANCH END
-						# # status in file contradicts the state on disk
-						# # (because it shows that we synced with this host AFTER last mod, 
-						# #                      so how come this host isn't on the up-to-date list?)
-						# echo "$itemName: $WARNINGUnexpectedlyNotOnUpToDateList"
-						# echoToLog "$itemName, $WARNINGUnexpectedlyNotOnUpToDateList"
-						# echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
-						# # offer override
-						# chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 					fi
 				fi
 				continue
@@ -1219,6 +1199,7 @@ main(){
 			# if [[ we reach this line ]]; then 
 			#	sync time must be simulataneous with local mod time and/or removable drive mod time (within 1s)
 			# 	(so can't sensibly decide what to do)
+			# simulataneous modification and sync will always result from a MERGE! Now that merging has been implemented, this section needs more nuance.
 			echo "$itemName: $WARNINGAmbiguousTimings"
 			echoToLog "$itemName, $WARNINGAmbiguousTimings"
 			echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
@@ -1227,7 +1208,6 @@ main(){
 			
 			continue
 		fi # end of the "if all exist" block
-		
 		# ----------------note that that's all four of the non/existence cases, this area is UNREACHABLE----------------
 		
 	done # end of while loop over items
@@ -1236,8 +1216,6 @@ main(){
 	tail -n 5000 "$LOGFILE" > "$LOGFILE.tmp" 2> /dev/null && mv "$LOGFILE.tmp" "$LOGFILE"
 	
 	getVerbose && echoTitle " end of script "
-	
-	# echo end of script
 }
 
 main "$@"
