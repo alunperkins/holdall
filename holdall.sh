@@ -55,6 +55,8 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # code and messages need tidying again, they've grown too large.
 # need to review behaviour re. sync vs. merge conflicted files (as opposed to folders) - may not be behaving in a transparent way
 # add a status mode where it prints the sync status of every item on the removable drive re. hosts, etc.
+# merges create a mod time that is the same as the sync time - this may be confusing - write something that deals with it
+# in INTERACTIVE MODE it does NOT prompt to do a first-time sync! Fix it!
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
@@ -1020,7 +1022,10 @@ main(){
 			then 
 				# BRANCH END
 				# then sync Host onto the Rmvbl
-				synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+				#synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+				echo "$itemName: exists on host but does not exist on removable drive "
+				getPermission "want to sync host >>> to >>> removable" \
+					&& synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
 			else 
 				# BRANCH END
 				# then we have an error, offer override
@@ -1038,7 +1043,10 @@ main(){
 			then 
 				# BRANCH END
 				# then sync Rmvbl onto Host 
-				synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+				#synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+				echo "$itemName: exists on removable drive but does not exist on host"
+				getPermission "want to sync removable >>> to >>> host" \
+					&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 			else 
 				# BRANCH END
 				# then we have an error, offer override
