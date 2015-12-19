@@ -56,7 +56,6 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # need to review behaviour re. sync vs. merge conflicted files (as opposed to folders) - may not be behaving in a transparent way
 # add a status mode where it prints the sync status of every item on the removable drive re. hosts, etc.
 # merges create a mod time that is the same as the sync time - this may be confusing - write something that deals with it
-# in INTERACTIVE MODE it does NOT prompt to do a first-time sync! Fix it!
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
