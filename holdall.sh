@@ -50,12 +50,12 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 
 # ---------- TO DO ----------
 # implement checking if an itemHostLoc is a subfolder of itemRmvblLoc, or vice-versa
-# make interactive mode give a chooseVersionDialog if user vetoes the default action
-#    (currently it is default or nothing. It is stupid. Obviously this isn't useful.)
 # code and messages need tidying again, they've grown too large.
 # need to review behaviour re. sync vs. merge conflicted files (as opposed to folders) - may not be behaving in a transparent way
 # add a status mode where it prints the sync status of every item on the removable drive re. hosts, etc.
 # merges create a mod time that is the same as the sync time - this may be confusing - write something that deals with it
+# unexpectedAbsenceDialog should offer to remove the item from the locsList. That's so if a user deletes a (synced) file/folder the program can be stopped from reinstating it every time it syncs. I think that's the likely intention of the user. Restoring from the removable would still be an option.
+# add to scanLocsList a check for items on the rmvbl that are not synced with any hosts, offer to delete them
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
