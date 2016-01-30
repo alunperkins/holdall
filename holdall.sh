@@ -56,6 +56,7 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # need to review behaviour re. sync vs. merge conflicted files (as opposed to folders) - may not be behaving in a transparent way
 # add a status mode where it prints the sync status of every item on the removable drive re. hosts, etc.
 # merges create a mod time that is the same as the sync time - this may be confusing - write something that deals with it
+# currently the handling of the case when the pivotal "rsync" command fails (in functions "synchronise" OR "merge") is fairly okay but is pretty unclear to someone reading the code IMO. Needs refactoring!
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
@@ -600,7 +601,7 @@ unexpectedAbsenceDialog(){
 		fi
 	fi
 }
-
+# NOTE that if there was a problem with the copy, the "touch" command below will still run - it shouldn't!
 synchronise(){
 	# once the caller has decided which direction to sync, this function handles the multiple steps involved
 	# 1. Synchronising with rsync in syncSourceToDest  2. removing old backups at dest  3. updating the status
@@ -673,6 +674,17 @@ syncSourceToDest(){
 	then
 		rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc"/ "$destLoc"
 		copyExitVal=$?
+		
+		# NOTE that if there was a problem with the copy, the "touch" command below will still run - it shouldn't!
+		# after this routine completes, we go back down the stack to the calling routine, etc., 
+		# and very few other commands are executed.
+		# All of the other commands that are executed are OK to execute IMO even if this had failed.
+		# Then a "continue" is reached in the main loop over the locationsListFile, i.e. this item is finished with
+		# however, I see now that it would be easy for it to be otherwise, 
+		# it would be easy for an innocent edit to make it so that a failure exit from rsync is not handled properly.
+		# the code needs to be improved!
+		# ideally, we would throw an exception...
+		# ...but bash doesn't have exceptions :P
 		
 		# but this leaves the destination's top-level dir modification time to be 
 		# NOW instead of that of the source, so sync this final datum before finishing
