@@ -57,6 +57,8 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # currently the handling of the case when the pivotal "rsync" command fails (in functions "synchronise" OR "merge") is fairly okay but is pretty unclear to someone reading the code IMO. Needs refactoring!
 # unexpectedAbsenceDialog should offer to remove the item from the locsList. That's so if a user deletes a (synced) file/folder the program can be stopped from reinstating it every time it syncs. I think that's the likely intention of the user. Restoring from the removable would still be an option.
 # add to scanLocsList a check for items on the rmvbl that are not synced with any hosts, offer to delete them
+# add an option to open the locsListFile for you, to save you having to find/type the given location yourself
+# change the -s option's function to READLINK of the "loc|alias" or "loc" text given, because it's convenient to type a relative path, but the path entered should be an absolute path
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
@@ -91,6 +93,7 @@ echoTitle(){ # echo $1 with a line of dashes
 	local title=$1
 	echo -n "----"
 	printf "%s%s \n" "$title" ${LOTSOFDASHES:0:(($(tput cols)-${#title}-20))}
+	# (where tput cols is the width of the current terminal, ${#title} is the length of the title, and leave a gap of 20 chars at the right side of the title)
 }
 readableDate(){ # convert seconds-since-epoch to human-readable
 	local dateInSecondSinceEpoch=$1
