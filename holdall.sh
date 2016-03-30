@@ -59,6 +59,9 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # add to scanLocsList a check for items on the rmvbl that are not synced with any hosts, offer to delete them
 # add an option to open the locsListFile for you, to save you having to find/type the given location yourself
 # change the -s option's function to READLINK of the "loc|alias" or "loc" text given, because it's convenient to type a relative path, but the path entered should be an absolute path
+# improve log echoes - the log is hard to read. There are some things, e.g. the sync direction decision, that would be hard to grep for, even.
+# add option to display, in user-readable format, the current status of all hosts re. being up-to-date and their last sync time.
+# add a check that disallows items and hosts that are CALLED a keyword like LASTSYNCDATE, UPTODATEHOSTS, and possibly also ...'-removed-XXXX-XX-XX~' 
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
