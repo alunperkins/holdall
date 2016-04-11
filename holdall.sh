@@ -724,7 +724,8 @@ removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not w
 		do
 			getVerbose && echo "removing old backup $oldBackupName"
 			# make sure the variable $oldBackupName contains "-removed-" followed by a date&time and then a "~", in the format -removed-YYYY-MM-DD-HHMM~ , before allowing the rm command to see it
-			[[ "$oldBackupName" =~ -removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~ ]] &&  getPermission "want to remove old backup $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
+			[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] &&  getPermission "want to remove old backup $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
+			[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] || echo "variable containing path to rm contained an invalid value '$oldBackupName'. Did not rm. Please report a bug to a maintainer."
 		done
 	fi
 }
