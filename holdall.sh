@@ -719,11 +719,12 @@ removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not w
 	if [[ ! -z $oldBackups ]]
 	then
 		local rmOptsString="-r"
-		getVerbose && rmOptsString="$rmOptsString"v
+		getVerbose && rmOptsString="$rmOptsString"v # it's pretty clear that $rmOptsString contains either "-r" or "-rv", robustly
 		ls -d "$locationStem"-removed* | sort | head --lines=-$NOOFBACKUPSTOKEEP | while read oldBackupName # loop over expired backups
 		do
 			getVerbose && echo "removing old backup $oldBackupName"
-			getPermission "want to remove old backup $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
+			# make sure the variable $oldBackupName contains "-removed-" followed by a date&time and then a "~", in the format -removed-YYYY-MM-DD-HHMM~ , before allowing the rm command to see it
+			[[ "$oldBackupName" =~ -removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~ ]] &&  getPermission "want to remove old backup $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
 		done
 	fi
 }
