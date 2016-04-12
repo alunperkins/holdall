@@ -559,21 +559,36 @@ unexpectedAbsenceDialog(){
 	local itemRmvblLoc="$3"
 	local absentItem=$4
 	
-	if [[ $absentItem == "host" ]]
-	then
-		echo Host item $itemHostLoc expected but does not exist
-		local absenceMessage="sync $itemRmvblLoc on removable drive onto $itemHostLoc"
-	else
-		if [[ $absentItem == "removable" ]]
-		then
+	case $absentItem in
+		"host")
+			echo Host item $itemHostLoc expected but does not exist
+			local absenceMessage="sync $itemRmvblLoc on removable drive onto $itemHostLoc"
+			;;
+		"local")
 			echo Removable drive item $itemRmvblLoc expected but does not exist
 			local absenceMessage="sync $itemHostLoc on host onto $itemRmvblLoc"
-		else
-			echo unexpectedAbsenceDialog: invalid arg no.6 - hard-coded error exists
+			;;
+		*)
+			echo "unexpectedAbsenceDialog: invalid arg no.6 - hard-coded error exists"
 			exit 100
 			return 1
-		fi
-	fi
+			;;
+	esac
+	if [[ $absentItem == "host" ]]
+	#then
+	#	echo Host item $itemHostLoc expected but does not exist
+	#	local absenceMessage="sync $itemRmvblLoc on removable drive onto $itemHostLoc"
+	#else
+	#	if [[ $absentItem == "removable" ]]
+	#	then
+	#		echo Removable drive item $itemRmvblLoc expected but does not exist
+	#		local absenceMessage="sync $itemHostLoc on host onto $itemRmvblLoc"
+	#	else
+	#		echo "unexpectedAbsenceDialog: invalid arg no.6 - hard-coded error exists"
+	#		exit 100
+	#		return 1
+	#	fi
+	#fi
 	
 	if [[ $AUTOMATIC == "on" ]]
 	then
@@ -590,24 +605,40 @@ unexpectedAbsenceDialog(){
 	fi
 	
 	# taking action
-	if [[ $input == $OVRDSYNC ]]
-	then
-		if [[ $absentItem == "removable" ]]
-		then
-			synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
-		else # then can assume $absentItem == "host"
-			synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
-		fi
-	else
-		if [[ $input == $OVRDERASERECORD ]]
-		then
+	case $input in
+		$OVRDSYNC)
+			if [[ $absentItem == "removable" ]]
+			then
+				synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+			else # then can assume $absentItem == "host"
+				synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+			fi
+			;;
+		$OVRDERASERECORD)
 			eraseItemFromStatusFile "$itemName"
-		else
+			;;
+		*)
 			echo "$itemName: taking no action"
-		fi
-	fi
+			;;
+	esac
+	#if [[ $input == $OVRDSYNC ]]
+	#then
+	#	if [[ $absentItem == "removable" ]]
+	#	then
+	#		synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+	#	else # then can assume $absentItem == "host"
+	#		synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+	#	fi
+	#else
+	#	if [[ $input == $OVRDERASERECORD ]]
+	#	then
+	#		eraseItemFromStatusFile "$itemName"
+	#	else
+	#		echo "$itemName: taking no action"
+	#	fi
+	#fi
 }
-# NOTE that if there was a problem with the copy, the "touch" command below will still run - it shouldn't!
+
 synchronise(){
 	# once the caller has decided which direction to sync, this function handles the multiple steps involved
 	# 1. Synchronising with rsync in syncSourceToDest  2. removing old backups at dest  3. updating the status
@@ -640,7 +671,7 @@ synchronise(){
 			removeOldBackups "$itemHostLoc"
 			;;
 		*)
-			echo synchronise was passed invalid argument $syncDirection, there is a hard-coded fault
+			echo "synchronise was passed invalid argument $syncDirection, there is a hard-coded fault"
 			echo "(synchronise expects $DIRECTIONRMVBLTOHOST or $DIRECTIONHOSTTORMVBL)"
 			exit 101
 			;;
@@ -745,6 +776,7 @@ writeToStatus(){
 	sed "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $(date +%s)/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE"
 	
 	# update the hosts line
+	# this should be made into a CASE statement
 	if [[ $syncDirection == $DIRECTIONHOSTTORMVBL ]]
 	then
 		# then removable drive just accepted a change from this host, delete all other hosts from up-to-date list
