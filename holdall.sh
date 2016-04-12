@@ -714,16 +714,19 @@ removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not w
 	if [[ $oldBackupsExist -ne true ]]; then return 0; fi
 	
 	getVerbose && echo checking for expired backups
-	local oldBackups=$(ls -d "$locationStem"-removed* | sort | head --lines=-$NOOFBACKUPSTOKEEP)
-	getVerbose && echo -e "backups existing:\n$(ls -1d "$locationStem"-removed* | sort)"
+	local existingBackupsSorted=$(ls -d "$locationStem"-removed* | grep '^'$locationStem'-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$' | sort)
+	getVerbose && echo -e "backups existing:\n$existingBackupsSorted"
+	local oldBackups=$(head --lines=-$NOOFBACKUPSTOKEEP <<<"$existingBackupsSorted")
+	#getVerbose && echo -e "backups existing:\n$(ls -1d "$locationStem"-removed* | grep '^'$locationStem'-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$' | sort)"
 	if [[ ! -z $oldBackups ]]
 	then
 		local rmOptsString="-r"
 		getVerbose && rmOptsString="$rmOptsString"v # it's pretty clear that $rmOptsString contains either "-r" or "-rv", robustly
-		ls -d "$locationStem"-removed* | sort | head --lines=-$NOOFBACKUPSTOKEEP | while read oldBackupName # loop over expired backups
+		#ls -1d "$locationStem"-removed* | grep '^'$locationStem'-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$' | sort | head --lines=-$NOOFBACKUPSTOKEEP | while read oldBackupName # loop over expired backups
+		echo "$oldBackups" | while read oldBackupName # loop over expired backups
 		do
 			getVerbose && echo "removing old backup $oldBackupName"
-			# make sure the variable $oldBackupName contains "-removed-" followed by a date&time and then a "~", in the format -removed-YYYY-MM-DD-HHMM~ , before allowing the rm command to see it
+			# for robust safety of the rm command, let's make sure the variable $oldBackupName contains "-removed-" followed by a date&time and then a "~", in the format -removed-YYYY-MM-DD-HHMM~ , before allowing the rm command to see it
 			[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] &&  getPermission "want to remove old backup $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
 			[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] || echo "variable containing path to rm contained an invalid value '$oldBackupName'. Did not rm. Please report a bug to a maintainer."
 		done
@@ -1205,7 +1208,9 @@ main(){
 						# which would mean that this sync is currently looking at forked versions too...
 						echo "$itemName: Note: If you have recently resolved a fork for this item then at this time the host and removable drive versions MAY ALSO be forked versions."
 						echoToLog "$itemName, Note: If you have recently resolved a fork for this item then at this time the host and removable drive versions MAY ALSO be forked versions."
-						getPermission "want to assume no recent forking problems and proceed with syncing removable drive onto host" && synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" || chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+						getPermission "want to assume no recent forking problems and proceed with syncing removable drive onto host" \
+							&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" \
+							|| chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 					else
 						# BRANCH END
 						# the order of events is: mod on removable, mod on host, sync with removable
@@ -1225,7 +1230,7 @@ main(){
 			# BRANCH END
 			# if [[ we reach this line ]]; then 
 			#	sync time must be simulataneous with local mod time and/or removable drive mod time (within 1s)
-			# 	(so can't sensibly decide what to do)
+			# 	so can't sensibly decide what to do
 			# simulataneous modification and sync will always result from a MERGE! Now that merging has been implemented, this section needs more nuance.
 			echo "$itemName: $WARNINGAmbiguousTimings"
 			echoToLog "$itemName, $WARNINGAmbiguousTimings"
