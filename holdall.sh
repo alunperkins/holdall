@@ -709,28 +709,23 @@ syncSourceToDest(){
 removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not with strange exceptional cases
 	local locationStem="$1"
 	
-	ls -d "$locationStem"* 2>/dev/null | grep "$locationStem-removed" >/dev/null 
-	local oldBackupsExist=$?
-	if [[ $oldBackupsExist -ne true ]]; then return 0; fi
-	
 	getVerbose && echo checking for expired backups
-	local existingBackupsSorted=$(ls -d "$locationStem"-removed* | grep '^'$locationStem'-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$' | sort)
+	local existingBackupsSorted="$(ls -d "$locationStem"-removed* | grep '^'$locationStem'-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$' | sort)" # this can return an empty string
 	getVerbose && echo -e "backups existing:\n$existingBackupsSorted"
-	local oldBackups=$(head --lines=-$NOOFBACKUPSTOKEEP <<<"$existingBackupsSorted")
-	#getVerbose && echo -e "backups existing:\n$(ls -1d "$locationStem"-removed* | grep '^'$locationStem'-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$' | sort)"
-	if [[ ! -z $oldBackups ]]
-	then
-		local rmOptsString="-r"
-		getVerbose && rmOptsString="$rmOptsString"v # it's pretty clear that $rmOptsString contains either "-r" or "-rv", robustly
-		#ls -1d "$locationStem"-removed* | grep '^'$locationStem'-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$' | sort | head --lines=-$NOOFBACKUPSTOKEEP | while read oldBackupName # loop over expired backups
-		echo "$oldBackups" | while read oldBackupName # loop over expired backups
-		do
-			getVerbose && echo "removing old backup $oldBackupName"
-			# for robust safety of the rm command, let's make sure the variable $oldBackupName contains "-removed-" followed by a date&time and then a "~", in the format -removed-YYYY-MM-DD-HHMM~ , before allowing the rm command to see it
-			[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] &&  getPermission "want to remove old backup $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
-			[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] || echo "variable containing path to rm contained an invalid value '$oldBackupName'. Did not rm. Please report a bug to a maintainer."
-		done
-	fi
+	local oldBackups="$(head --lines=-$NOOFBACKUPSTOKEEP <<<"$existingBackupsSorted")"
+	
+	if [[ -z $oldBackups ]]; then return 0; fi # quit if there are no old backups
+	
+	local rmOptsString="-r"
+	getVerbose && rmOptsString="$rmOptsString"v # it's pretty clear that $rmOptsString contains either "-r" or "-rv", robustly
+	#ls -1d "$locationStem"-removed* | grep '^'$locationStem'-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$' | sort | head --lines=-$NOOFBACKUPSTOKEEP | while read oldBackupName # loop over expired backups
+	echo "$oldBackups" | while read oldBackupName # loop over expired backups
+	do
+		getVerbose && echo "removing old backup $oldBackupName"
+		# for robust safety of the rm command, let's make sure the variable $oldBackupName contains "-removed-" followed by a date&time and then a "~", in the format -removed-YYYY-MM-DD-HHMM~ , before allowing the rm command to see it
+		[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] &&  getPermission "want to remove old backup $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
+		[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] || echo "variable containing path to rm contained an invalid value '$oldBackupName'. Did not rm. Please report a bug to a maintainer."
+	done
 }
 writeToStatus(){
 	getPretend && return 0; # in pretend mode simply skip this entire function
