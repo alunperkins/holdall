@@ -564,7 +564,7 @@ unexpectedAbsenceDialog(){
 			echo Host item $itemHostLoc expected but does not exist
 			local absenceMessage="sync $itemRmvblLoc on removable drive onto $itemHostLoc"
 			;;
-		"local")
+		"removable")
 			echo Removable drive item $itemRmvblLoc expected but does not exist
 			local absenceMessage="sync $itemHostLoc on host onto $itemRmvblLoc"
 			;;
@@ -574,7 +574,7 @@ unexpectedAbsenceDialog(){
 			return 1
 			;;
 	esac
-	if [[ $absentItem == "host" ]]
+	#if [[ $absentItem == "host" ]]
 	#then
 	#	echo Host item $itemHostLoc expected but does not exist
 	#	local absenceMessage="sync $itemRmvblLoc on removable drive onto $itemHostLoc"
