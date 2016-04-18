@@ -45,6 +45,8 @@ readonly WARNINGAmbiguousTimings="Warning: Showing a simulataneous modification 
 readonly MESSAGEAlreadyInSync="No changes since last synchronisation. "
 readonly MESSAGESyncingRmvblToHost="Syncing removable drive >> host"
 readonly MESSAGESyncingHostToRmvbl="Syncing host >> removable drive"
+readonly MESSAGEMergingRmvblToHost="Merging removable drive >> host"
+readonly MESSAGEMergingHostToRmvbl="Merging host >> removable drive"
 
 readonly LOTSOFDASHES="----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------" # variable provided for cutting dashes from in echoTitle
 
@@ -816,14 +818,14 @@ merge(){
 	
 	case $mergeDirection in
 		$DIRECTIONHOSTTORMVBL)
-			echo "$itemName: $MESSAGESyncingHostToRmvbl"
+			echo "$itemName: $MESSAGEMergingHostToRmvbl"
 			mergeSourceToDest "$itemHostLoc" "$itemRmvblLoc"
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
 			echoToLog "$itemHostLoc, merged to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			;;
 		$DIRECTIONRMVBLTOHOST)
-			echo "$itemName: $MESSAGESyncingRmvblToHost"
+			echo "$itemName: $MESSAGEMergingRmvblToHost"
 			mergeSourceToDest "$itemRmvblLoc" "$itemHostLoc"
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
