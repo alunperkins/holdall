@@ -48,6 +48,15 @@ readonly MESSAGESyncingHostToRmvbl="Syncing host >> removable drive"
 readonly MESSAGEMergingRmvblToHost="Merging removable drive >> host"
 readonly MESSAGEMergingHostToRmvbl="Merging host >> removable drive"
 
+# text for the summary table
+summary="ITEM HOST RMVBL TYPE" # non-readonly global variable! 
+readonly SUMMARYTABLEsyncHostToRmvbl=". ->| sync"
+readonly SUMMARYTABLEsyncRmvblToHost="|<- . sync"
+readonly SUMMARYTABLEmergeHostToRmvbl=". ->| merge"
+readonly SUMMARYTABLEmergeRmvblToHost="|<- . merge"
+readonly SUMMARYTABLEerror="! ! error"
+
+
 readonly LOTSOFDASHES="----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------" # variable provided for cutting dashes from in echoTitle
 
 # ---------- TO DO ----------
@@ -596,6 +605,8 @@ synchronise(){
 			echoToLog "$itemName, host copied to removable drive"
 			echoToLog "$itemname, $itemHostLoc, copied to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			removeOldBackups "$itemRmvblLoc"
+			
+			if [[ $copyExitVal -eq 0 ]]; then summary="$summary\n$itemName $SUMMARYTABLEsyncHostToRmvbl"; else summary="$summary\n$SUMMARYTABLEerror"; fi
 			;;
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGESyncingRmvblToHost"
@@ -605,6 +616,8 @@ synchronise(){
 			echoToLog "$itemName, removable drive copied to host"
 			echoToLog "$itemname, $itemRmvblLoc, copied to, $itemHostLoc, copy exit status=$copyExitVal"
 			removeOldBackups "$itemHostLoc"
+			
+			if [[ $copyExitVal -eq 0 ]]; then summary="$summary\n$itemName $SUMMARYTABLEsyncRmvblToHost"; else summary="$summary\n$SUMMARYTABLEerror"; fi
 			;;
 		*)
 			echo "synchronise was passed invalid argument $syncDirection, there is a hard-coded fault"
@@ -752,6 +765,8 @@ merge(){
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
 			echoToLog "$itemName, host merged to removable drive"
 			echoToLog "$itemname, $itemHostLoc, merged to, $itemRmvblLoc, copy exit status=$copyExitVal"
+			
+			if [[ $copyExitVal -eq 0 ]]; then summary="$summary\n$itemName $SUMMARYTABLEmergeHostToRmvbl"; else summary="$summary\n$SUMMARYTABLEerror"; fi
 			;;
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGEMergingRmvblToHost"
@@ -760,6 +775,8 @@ merge(){
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
 			echoToLog "$itemName, removable drive merged to host"
 			echoToLog "$itemname, $itemRmvblLoc, merged to, $itemHostLoc, copy exit status=$copyExitVal"
+			
+			if [[ $copyExitVal -eq 0 ]]; then summary="$summary\n$itemName $SUMMARYTABLEmergeRmvblToHost"; else summary="$summary\n$SUMMARYTABLEerror"; fi
 			;;
 		*)
 			echo merge was passed invalid argument $mergeDirection, there is a hard-coded fault
@@ -903,14 +920,12 @@ main(){
 	
 	# begin iterating over the locations listed in LOCSLIST
 	# |while...   : ... stores line contents thus: (first thing on a line) > itemHostLoc [delimeter='|'] (the rest of the line) > itemAlias
-	cleanCommentsAndWhitespace $LOCSLIST \
-	   | while IFS='|' read itemHostLocRaw itemAlias 
-	do
-		# because I am PIPING into the loop, this is in a subshell, all variables are LOCAL TO THE LOOP
-		# that means all variables declared in the loop are declared locally to the loop
-		# and also that CHANGES that occur in this loop to variables declared outside, are also local to the loop
-		# nothing that happens in this loop can affect anything in the rest of the script!
-		# it's just for file I/O and user I/O
+	while IFS='|' read itemHostLocRaw itemAlias 
+	do	
+		#local old_IFS=$IFS # save the field separator
+		#IFS='|' # the field separator used in the locsList
+		#read itemHostLocRaw itemAlias <<<"$line"
+		#IFS=$old_IFS # restore default field separator
 		
 		# This loop is in 4 sections. 1)Set the syncing file locations 2)retreive info from status file 3)retrieve info from disk 4)logic and syncing
 		
@@ -1199,10 +1214,15 @@ main(){
 		fi # end of the "if all exist" block
 		# ----------------note that that's all four of the non/existence cases, this area is UNREACHABLE----------------
 		
-	done # end of while loop over items
+	done < <(cleanCommentsAndWhitespace $LOCSLIST) # end of while loop over items
 	
 	# trim log file to a reasonable length
 	tail -n 5000 "$LOGFILE" > "$LOGFILE.tmp" 2> /dev/null && mv "$LOGFILE.tmp" "$LOGFILE"
+	
+	echoTitle " SUMMARY "
+	echo summary = "$summary"
+	echo -e "$summary" | column -t -s " "
+		
 	
 	getVerbose && echoTitle " end of script "
 }
