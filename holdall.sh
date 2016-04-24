@@ -659,8 +659,8 @@ synchronise(){
 			syncSourceToDest "$itemHostLoc" "$itemRmvblLoc"
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $syncDirection; fi
-			echoToLog "host copied to removable drive"
-			echoToLog "$itemHostLoc, copied to, $itemRmvblLoc, copy exit status=$copyExitVal"
+			echoToLog "$itemName, host copied to removable drive"
+			echoToLog "$itemname, $itemHostLoc, copied to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			removeOldBackups "$itemRmvblLoc"
 			;;
 		$DIRECTIONRMVBLTOHOST)
@@ -668,8 +668,8 @@ synchronise(){
 			syncSourceToDest "$itemRmvblLoc" "$itemHostLoc"
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $syncDirection; fi
-			echoToLog "removable drive copied to host"
-			echoToLog "$itemRmvblLoc, copied to, $itemHostLoc, copy exit status=$copyExitVal"
+			echoToLog "$itemName, removable drive copied to host"
+			echoToLog "$itemname, $itemRmvblLoc, copied to, $itemHostLoc, copy exit status=$copyExitVal"
 			removeOldBackups "$itemHostLoc"
 			;;
 		*)
@@ -822,14 +822,16 @@ merge(){
 			mergeSourceToDest "$itemHostLoc" "$itemRmvblLoc"
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
-			echoToLog "$itemHostLoc, merged to, $itemRmvblLoc, copy exit status=$copyExitVal"
+			echoToLog "$itemName, host merged to removable drive"
+			echoToLog "$itemname, $itemHostLoc, merged to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			;;
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGEMergingRmvblToHost"
 			mergeSourceToDest "$itemRmvblLoc" "$itemHostLoc"
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
-			echoToLog "$itemRmvblLoc, merged to, $itemHostLoc, copy exit status=$copyExitVal"
+			echoToLog "$itemName, removable drive merged to host"
+			echoToLog "$itemname, $itemRmvblLoc, merged to, $itemHostLoc, copy exit status=$copyExitVal"
 			;;
 		*)
 			echo merge was passed invalid argument $mergeDirection, there is a hard-coded fault
