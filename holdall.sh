@@ -52,7 +52,6 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 
 # ---------- TO DO ----------
 # implement checking if an itemHostLoc is a subfolder of itemRmvblLoc, or vice-versa
-# code and messages need tidying again, they've grown too large.
 # need to review behaviour re. sync vs. merge conflicted files (as opposed to folders) - may not be behaving in a transparent way
 # add a status mode where it prints the sync status of every item on the removable drive re. hosts, etc.
 # merges create a mod time that is the same as the sync time - this may be confusing - write something that deals with it
@@ -61,7 +60,6 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # add to scanLocsList a check for items on the rmvbl that are not synced with any hosts, offer to delete them
 # add an option to open the locsListFile for you, to save you having to find/type the given location yourself
 # change the -s option's function to READLINK of the "loc|alias" or "loc" text given, because it's convenient to type a relative path, but the path entered should be an absolute path
-# improve log echoes - the log is hard to read. There are some things, e.g. the sync direction decision, that would be hard to grep for, even.
 # add option to display, in user-readable format, the current status of all hosts re. being up-to-date and their last sync time.
 # add a check that disallows items and hosts that are CALLED a keyword like LASTSYNCDATE, UPTODATEHOSTS, and possibly also ...'-removed-XXXX-XX-XX~' 
 # ---------------------------
@@ -151,39 +149,6 @@ modTimeOf(){
 	
 	echo $itemModTime
 }
-# rsyncFileOrFolderWrapper(){
-# 	# We need to rsync slightly differently for a file than for a folder.
-# 	# This wrapper handles the branching of the rsync command.
-# 	# Callers can invoke this function WITHOUT HAVING TO TEST if they're copying a file or a folder.
-# 	# it also wraps a "touch" command to keep mod times in sync
-# 	local optsStandard="$1"
-# 	local optsQuoted="$2"
-# 	local sourceLoc="$3"
-# 	local destLoc="$4"
-# 	local copyExitVal=""
-# 	
-# 	# debug
-# 	echo "entered rsyncFileOrFolderWrapper"
-# 	echo "optsStandard=$optsStandard"
-# 	echo "optsQuoted=$optsQuoted"
-# 	echo "sourceLoc=$sourceLoc"
-# 	echo "destLoc=$destLoc"
-# 	
-# 	if [[ -d "$sourceLoc" ]] # if a directory
-# 	then
-# 		getPermission "want to call rsync $optsStandard $optsQuoted $sourceLoc/ $destLoc" && rsync $optsStandard "$optsQuoted" "$sourceLoc"/ "$destLoc"
-# 		copyExitVal=$?
-# 		
-# 		# but this leaves the destination's top-level dir modification time to be 
-# 		# NOW instead of that of the source, so sync this final datum before finishing
-# 		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
-# 	else # if a file
-# 		getPermission "want to call rsync $optsStandard $optsQuoted $sourceLoc $destLoc" && rsync $optsStandard "$optsQuoted" "$sourceLoc" "$destLoc"
-# 		copyExitVal=$?
-# 	fi
-# 	return $copyExitVal
-# }
-# rsyncFileOrFolderWrapper - COULDN'T MAKE THIS WORK due to issues with passing arguments that may be blank or contain spaces, etc. Decided that, therefore, eventual working code would not be clear. Decided against this plan.
 
 showHelp(){
 	cat <<- _EOF_
@@ -576,21 +541,6 @@ unexpectedAbsenceDialog(){
 			return 1
 			;;
 	esac
-	#if [[ $absentItem == "host" ]]
-	#then
-	#	echo Host item $itemHostLoc expected but does not exist
-	#	local absenceMessage="sync $itemRmvblLoc on removable drive onto $itemHostLoc"
-	#else
-	#	if [[ $absentItem == "removable" ]]
-	#	then
-	#		echo Removable drive item $itemRmvblLoc expected but does not exist
-	#		local absenceMessage="sync $itemHostLoc on host onto $itemRmvblLoc"
-	#	else
-	#		echo "unexpectedAbsenceDialog: invalid arg no.6 - hard-coded error exists"
-	#		exit 100
-	#		return 1
-	#	fi
-	#fi
 	
 	if [[ $AUTOMATIC == "on" ]]
 	then
@@ -623,22 +573,6 @@ unexpectedAbsenceDialog(){
 			echo "$itemName: taking no action"
 			;;
 	esac
-	#if [[ $input == $OVRDSYNC ]]
-	#then
-	#	if [[ $absentItem == "removable" ]]
-	#	then
-	#		synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
-	#	else # then can assume $absentItem == "host"
-	#		synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
-	#	fi
-	#else
-	#	if [[ $input == $OVRDERASERECORD ]]
-	#	then
-	#		eraseItemFromStatusFile "$itemName"
-	#	else
-	#		echo "$itemName: taking no action"
-	#	fi
-	#fi
 }
 
 synchronise(){
@@ -703,9 +637,6 @@ syncSourceToDest(){
 		local longOptBackup=""
 	fi
 	getPretend && longOpts="$longOpts --dry-run" # if pretending make rsync pretend too    # note: rsync --dry-run may not always _entirely_ avoid writing to disk...?
-	
-# 	local opts="$shortOpts $longOpts"
-# 	rsyncFileOrFolderWrapper "$opts" "$longOptBackup" "$sourceLoc" "$destLoc" # opts that shouldn't be quoted and that must be quoted need to be passed separately
 	
 	# rsync FILE/FOLDER BRANCHING BLOCK
 	# for proper behaviour with directories need a slash after the source, but with files this syntax would be invalid
@@ -812,9 +743,6 @@ merge(){
 	local mergeDirection=$2
 	local itemHostLoc="$3"
 	local itemRmvblLoc="$4"
-	
-	# echoToLog "$itemName, difference: "
-	# echoToLog "$(diffItems "$itemHostLoc" "$itemRmvblLoc")" # slow and uneccessary
 	
 	case $mergeDirection in
 		$DIRECTIONHOSTTORMVBL)
@@ -1075,7 +1003,6 @@ main(){
 			then 
 				# BRANCH END
 				# then sync Host onto the Rmvbl
-				#synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
 				echo "$itemName: exists on host but does not exist on removable drive "
 				getPermission "want to sync host >>> to >>> removable" \
 					&& synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
@@ -1096,7 +1023,6 @@ main(){
 			then 
 				# BRANCH END
 				# then sync Rmvbl onto Host 
-				#synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 				echo "$itemName: exists on removable drive but does not exist on host"
 				getPermission "want to sync removable >>> to >>> host" \
 					&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
