@@ -62,6 +62,9 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # change the -s option's function to READLINK of the "loc|alias" or "loc" text given, because it's convenient to type a relative path, but the path entered should be an absolute path
 # add option to display, in user-readable format, the current status of all hosts re. being up-to-date and their last sync time.
 # add a check that disallows items and hosts that are CALLED a keyword like LASTSYNCDATE, UPTODATEHOSTS, and possibly also ...'-removed-XXXX-XX-XX~' 
+# move these lines INSIDE chooseVersionDialog : echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
+# consider redirect input using units, instead of getting all user input from /dev/tty, so that person running program can still choose to send it input from somewhere else should they want to, like any other program
+# in fact, generally review the programs use of stdout and stderr !
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
