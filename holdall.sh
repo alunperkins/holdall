@@ -541,6 +541,7 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 				merge "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 				;;
 			*)
+				appendLineToSummary "$itemName $SUMMARYTABLEskip"
 				echo "$itemName: taking no action"
 				;;
 		esac
