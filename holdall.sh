@@ -52,9 +52,16 @@ readonly MESSAGEMergingHostToRmvbl="Merging host >> removable drive"
 summary="ITEM HOST RMVBL TYPE" # non-readonly global variable! 
 readonly SUMMARYTABLEsyncHostToRmvbl=". ->| sync"
 readonly SUMMARYTABLEsyncRmvblToHost="|<- . sync"
-readonly SUMMARYTABLEmergeHostToRmvbl=". ->| merge"
-readonly SUMMARYTABLEmergeRmvblToHost="|<- . merge"
+readonly SUMMARYTABLEmergeHostToRmvbl=". +>| merge"
+readonly SUMMARYTABLEmergeRmvblToHost="|<+ . merge"
 readonly SUMMARYTABLEerror="! ! error"
+readonly SUMMARYTABLEsyncHostToRmvblError=". >x| sync_error_"
+readonly SUMMARYTABLEsyncRmvblToHostError="|x< . sync_error_"
+readonly SUMMARYTABLEmergeHostToRmvblError=". >x| merge_error_"
+readonly SUMMARYTABLEmergeRmvblToHostError="|x< . merge_error_"
+
+readonly SUMMARYTABLEskip=". . skip"
+
 
 
 readonly LOTSOFDASHES="----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------" # variable provided for cutting dashes from in echoTitle
@@ -113,6 +120,9 @@ echoTitle(){ # echo $1 with a line of dashes
 readableDate(){ # convert seconds-since-epoch to human-readable
 	local dateInSecondSinceEpoch=$1
 	echo $(date --date=@$dateInSecondSinceEpoch +%c)
+}
+appendLineToSummary(){
+	summary="$summary\n$1"
 }
 diffItems(){ # return diff $1 $2
 	local itemHostLoc="$1"
@@ -609,7 +619,7 @@ synchronise(){
 			echoToLog "$itemname, $itemHostLoc, copied to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			removeOldBackups "$itemRmvblLoc"
 			
-			if [[ $copyExitVal -eq 0 ]]; then summary="$summary\n$itemName $SUMMARYTABLEsyncHostToRmvbl"; else summary="$summary\n$SUMMARYTABLEerror"; fi
+			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvblError"; fi
 			;;
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGESyncingRmvblToHost"
@@ -620,7 +630,7 @@ synchronise(){
 			echoToLog "$itemname, $itemRmvblLoc, copied to, $itemHostLoc, copy exit status=$copyExitVal"
 			removeOldBackups "$itemHostLoc"
 			
-			if [[ $copyExitVal -eq 0 ]]; then summary="$summary\n$itemName $SUMMARYTABLEsyncRmvblToHost"; else summary="$summary\n$SUMMARYTABLEerror"; fi
+			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHost"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHostError"; fi
 			;;
 		*)
 			echo "synchronise was passed invalid argument $syncDirection, there is a hard-coded fault"
@@ -769,7 +779,7 @@ merge(){
 			echoToLog "$itemName, host merged to removable drive"
 			echoToLog "$itemname, $itemHostLoc, merged to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			
-			if [[ $copyExitVal -eq 0 ]]; then summary="$summary\n$itemName $SUMMARYTABLEmergeHostToRmvbl"; else summary="$summary\n$SUMMARYTABLEerror"; fi
+			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvblError"; fi
 			;;
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGEMergingRmvblToHost"
@@ -779,7 +789,7 @@ merge(){
 			echoToLog "$itemName, removable drive merged to host"
 			echoToLog "$itemname, $itemRmvblLoc, merged to, $itemHostLoc, copy exit status=$copyExitVal"
 			
-			if [[ $copyExitVal -eq 0 ]]; then summary="$summary\n$itemName $SUMMARYTABLEmergeRmvblToHost"; else summary="$summary\n$SUMMARYTABLEerror"; fi
+			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHost"; else appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHostError"; fi
 			;;
 		*)
 			echo merge was passed invalid argument $mergeDirection, there is a hard-coded fault
@@ -985,6 +995,7 @@ main(){
 			eraseItemFromStatusFileDialog "$itemName" # does or does not erase
 			# then skip - it's best to take it from the top again after a big change like that
 			echo "$itemName: Skipping synchronisation"
+			appendLineToSummary "$itemName $SUMMARYTABLEerror"
 			continue
 		fi
 		
@@ -1005,10 +1016,12 @@ main(){
 				echo "$itemName: $WARNINGSyncStatusForNonexistentItems"
 				echoToLog "$itemName, $WARNINGSyncStatusForNonexistentItems"
 				eraseItemFromStatusFileDialog "$itemName"
+				appendLineToSummary "$itemName $SUMMARYTABLEerror"
 			else 
 				# BRANCH END
 				echo "$itemName: $WARNINGNonexistentItems"
 				echoToLog "$itemName, $WARNINGNonexistentItems"
+				appendLineToSummary "$itemName $SUMMARYTABLEerror"
 				echo "$itemName: skipping "
 			fi
 			continue
@@ -1023,12 +1036,14 @@ main(){
 				# then sync Host onto the Rmvbl
 				echo "$itemName: exists on host but does not exist on removable drive "
 				getPermission "want to sync host >>> to >>> removable" \
-					&& synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+					&& synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc" \
+					|| appendLineToSummary "$itemName $SUMMARYTABLEerror"
 			else 
 				# BRANCH END
 				# then we have an error, offer override
 				echo "$itemName: $WARNINGSyncedButRmvblAbsent"
 				echoToLog "$itemName, $WARNINGSyncedButRmvblAbsent"
+				appendLineToSummary "$itemName $SUMMARYTABLEerror"
 				unexpectedAbsenceDialog "$itemName" "$itemHostLoc" "$itemRmvblLoc" "removable"
 			fi
 			continue
@@ -1043,12 +1058,14 @@ main(){
 				# then sync Rmvbl onto Host 
 				echo "$itemName: exists on removable drive but does not exist on host"
 				getPermission "want to sync removable >>> to >>> host" \
-					&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+					&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" \
+					|| appendLineToSummary "$itemName $SUMMARYTABLEerror"
 			else 
 				# BRANCH END
 				# then we have an error, offer override
 				echo "$itemName: $WARNINGSyncedButHostAbsent"
 				echoToLog "$itemName, $WARNINGSyncedButHostAbsent"
+				appendLineToSummary "$itemName $SUMMARYTABLEerror"
 				unexpectedAbsenceDialog "$itemName" "$itemHostLoc" "$itemRmvblLoc" "host"
 			fi
 			continue
@@ -1064,6 +1081,7 @@ main(){
 				echoToLog "$itemName, $WARNINGMismatchedItems"
 				# offer override??
 				echo "$itemName: skipping"
+				appendLineToSummary "$itemName $SUMMARYTABLEerror"
 				continue
 			fi
 			
@@ -1082,6 +1100,7 @@ main(){
 				# offer override to erase the status and proceed
 				echo "$itemName: $WARNINGUnexpectedSyncStatusAbsence"
 				echoToLog "$itemName, $WARNINGUnexpectedSyncStatusAbsence"
+				appendLineToSummary "$itemName $SUMMARYTABLEerror"
 				eraseItemFromStatusFileDialog "$itemName" # hmmm... the user may not see the advantage of erasing an "unexpectedly absent" status...
 				chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime 0 # never synced before so pass a zero for sync time
 				continue
@@ -1131,6 +1150,7 @@ main(){
 					# item has been forked
 					echo "$itemName: $WARNINGFork"
 					echoToLog "$itemName, $WARNINGFork"
+					appendLineToSummary "$itemName $SUMMARYTABLEfork"
 					echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
 					# offer override
 					chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
@@ -1143,6 +1163,7 @@ main(){
 				# item has been forked
 				echo "$itemName: $WARNINGFork"
 				echoToLog "$itemName, $WARNINGFork"
+				appendLineToSummary "$itemName $SUMMARYTABLEfork"
 				echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
 				# offer override
 				chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
@@ -1167,6 +1188,7 @@ main(){
 						# chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
 						# continue
 					# fi
+					appendLineToSummary "$itemName $SUMMARYTABLEskip"
 					echo "$itemName: skipping"
 				else
 					if [[ $itemRmvblModTime -gt $itemHostModTime ]]
@@ -1194,6 +1216,7 @@ main(){
 						
 						echo "$itemName: $WARNINGFork"
 						echoToLog "$itemName, $WARNINGFork"
+						appendLineToSummary "$itemName $SUMMARYTABLEfork"
 						echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
 						# offer override
 						chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
@@ -1209,6 +1232,7 @@ main(){
 			# simulataneous modification and sync will always result from a MERGE! Now that merging has been implemented, this section needs more nuance.
 			echo "$itemName: $WARNINGAmbiguousTimings"
 			echoToLog "$itemName, $WARNINGAmbiguousTimings"
+			appendLineToSummary "$itemName $SUMMARYTABLEerror"
 			echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
 			# offer override
 			chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
@@ -1223,7 +1247,6 @@ main(){
 	tail -n 5000 "$LOGFILE" > "$LOGFILE.tmp" 2> /dev/null && mv "$LOGFILE.tmp" "$LOGFILE"
 	
 	echoTitle " SUMMARY "
-	echo summary = "$summary"
 	echo -e "$summary" | column -t -s " "
 		
 	
