@@ -61,6 +61,7 @@ readonly SUMMARYTABLEmergeHostToRmvblError=". >x| merge_error_"
 readonly SUMMARYTABLEmergeRmvblToHostError="|x< . merge_error_"
 
 readonly SUMMARYTABLEskip=". . skip"
+readonly SUMMARYTABLEfork="? ? forked"
 
 
 
