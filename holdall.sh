@@ -60,6 +60,9 @@ readonly SUMMARYTABLEsyncRmvblToHostError="|x< . sync_error_"
 readonly SUMMARYTABLEmergeHostToRmvblError=". >x| merge_error_"
 readonly SUMMARYTABLEmergeRmvblToHostError="|x< . merge_error_"
 
+readonly SUMMARYTABLEdidNotAllowFirstTimeSyncToRmvbl=". x first-time_sync_cancelled"
+readonly SUMMARYTABLEdidNotAllowFirstTimeSyncToHost="x . first-time_sync_cancelled"
+
 readonly SUMMARYTABLEskip=". . skip"
 readonly SUMMARYTABLEfork="? ? forked"
 
@@ -1038,7 +1041,7 @@ main(){
 				echo "$itemName: exists on host but does not exist on removable drive "
 				getPermission "want to sync host >>> to >>> removable" \
 					&& synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc" \
-					|| appendLineToSummary "$itemName $SUMMARYTABLEerror"
+					|| appendLineToSummary "$itemName $SUMMARYTABLEdidNotAllowFirstTimeSyncToRmvbl"
 			else 
 				# BRANCH END
 				# then we have an error, offer override
@@ -1060,7 +1063,7 @@ main(){
 				echo "$itemName: exists on removable drive but does not exist on host"
 				getPermission "want to sync removable >>> to >>> host" \
 					&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" \
-					|| appendLineToSummary "$itemName $SUMMARYTABLEerror"
+					|| appendLineToSummary "$itemName $SUMMARYTABLEdidNotAllowFirstTimeSyncToHost"
 			else 
 				# BRANCH END
 				# then we have an error, offer override
