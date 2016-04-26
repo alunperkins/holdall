@@ -619,7 +619,7 @@ synchronise(){
 			echoToLog "$itemname, $itemHostLoc, copied to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			removeOldBackups "$itemRmvblLoc"
 			
-			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvblError"; fi
+			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvblError$copyExitVal"; fi
 			;;
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGESyncingRmvblToHost"
@@ -630,7 +630,7 @@ synchronise(){
 			echoToLog "$itemname, $itemRmvblLoc, copied to, $itemHostLoc, copy exit status=$copyExitVal"
 			removeOldBackups "$itemHostLoc"
 			
-			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHost"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHostError"; fi
+			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHost"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHostError$copyExitVal"; fi
 			;;
 		*)
 			echo "synchronise was passed invalid argument $syncDirection, there is a hard-coded fault"
@@ -779,7 +779,7 @@ merge(){
 			echoToLog "$itemName, host merged to removable drive"
 			echoToLog "$itemname, $itemHostLoc, merged to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			
-			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvblError"; fi
+			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvblError$copyExitVal"; fi
 			;;
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGEMergingRmvblToHost"
@@ -789,7 +789,7 @@ merge(){
 			echoToLog "$itemName, removable drive merged to host"
 			echoToLog "$itemname, $itemRmvblLoc, merged to, $itemHostLoc, copy exit status=$copyExitVal"
 			
-			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHost"; else appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHostError"; fi
+			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHost"; else appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHostError$copyExitVal"; fi
 			;;
 		*)
 			echo merge was passed invalid argument $mergeDirection, there is a hard-coded fault
