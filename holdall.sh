@@ -822,9 +822,8 @@ mergeSourceToDest(){
 		rsync $shortOpts $longOpts "$sourceLoc"/ "$destLoc"
 		copyExitVal=$?
 		
-		# but this leaves the destination's top-level dir modification time to be 
-		# NOW instead of that of the source, so sync this final datum before finishing
-		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
+		# but this leaves the destination's top-level dir modification time should definitely be NOW
+		getPretend || touch -m "$destLoc"
 		
 	else # if it is a file
 		rsync $shortOpts $longOpts "$sourceLoc" "$destLoc"
