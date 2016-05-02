@@ -494,8 +494,12 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 			echo "writing newer $itemRmvblLoc from $itemRmvblModTimeReadable onto $itemHostLoc from $itemHostModTimeReadable"
 			synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 		else 
-			echo "writing newer $itemHostLoc from $itemHostModTimeReadable onto $itemRmvblLoc from $itemRmvblModTimeReadable"
-			synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+			if [[ $itemRmvblModTime -lt $itemHostModTime ]]
+				echo "writing newer $itemHostLoc from $itemHostModTimeReadable onto $itemRmvblLoc from $itemRmvblModTimeReadable"
+				synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+			else # then mod times must be equal
+				echo "but both versions have the same modification time. Taking no action."
+			fi
 		fi
 	else # print some information to help the user choose whether to write host>rmvbl or rmvbl>host
 		echo "   USER INPUT REQUIRED  -  keep which version of itemName $itemName?"
