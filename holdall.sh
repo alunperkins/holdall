@@ -492,11 +492,11 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 		if [[ $itemRmvblModTime -gt $itemHostModTime ]]
 		then
 			echo "writing newer $itemRmvblLoc from $itemRmvblModTimeReadable onto $itemHostLoc from $itemHostModTimeReadable"
-			synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+			merge "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 		else 
 			if [[ $itemRmvblModTime -lt $itemHostModTime ]]
 				echo "writing newer $itemHostLoc from $itemHostModTimeReadable onto $itemRmvblLoc from $itemRmvblModTimeReadable"
-				synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+				merge "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
 			else # then mod times must be equal
 				echo "but both versions have the same modification time. Taking no action."
 			fi
