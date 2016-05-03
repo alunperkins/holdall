@@ -1,5 +1,7 @@
 #!/bin/bash
 
+readonly PROGNAME=$(basename $0)
+
 # this tests the logic of holdall for different mod time/history configurations, to see if it does the sync in the correct direction
 # it tests files only, not folders
 
@@ -640,7 +642,7 @@ main(){
 	[[ -d $RMVBL ]] || mkdir $RMVBL
 	
 	# get a list of all the units that have been declared above by self-grepping (!)
-	listOfUnits="$(grep -o '^unit[0-9][0-9][0-9][a-zA-Z0-9]*(){\s*$' testerUnits.sh | grep -o '^unit[0-9]*' | sort | uniq)"
+	listOfUnits="$(grep -o '^unit[0-9][0-9][0-9][a-zA-Z0-9]*(){\s*$' $PROGNAME | grep -o '^unit[0-9]*' | sort | uniq)"
 	
 	# run all the initialisers
 	echo "initialising..."
