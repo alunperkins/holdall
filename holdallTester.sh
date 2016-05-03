@@ -16,6 +16,12 @@ readonly WED=1389139200
 readonly THU=1389225600
 readonly FRI=1389312000
 
+report="UNIT@RESULT@DESCRIPTION" # global, but not readonly!
+
+appendLineToReport(){
+	report="$report\n$1"
+}
+
 setRmvblTime(){
 	local itemName="$1"
 	local time="$2"
@@ -620,9 +626,9 @@ unit048Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-# unit048 DESCRIPTION:  RT = ST = HT, NUTD, should say error and do nothing 
-unit048Initialise(){
-	local itemName=unit048
+# unit049 DESCRIPTION:  RT = ST = HT, NUTD, should say error and do nothing 
+unit049Initialise(){
+	local itemName=unit049
 	addToLocsList $itemName
 	
 	writeToRmvbl $itemName "old"
@@ -632,8 +638,8 @@ unit048Initialise(){
 	setRmvblTime $itemName $WED
 	setHostTime $itemName $WED
 }
-unit048Check(){
-	local itemName=unit048
+unit049Check(){
+	local itemName=unit049
 	[[ $(cat $HOST/$itemName) == "also old" ]] || return 1
 	[[ $(cat $RMVBL/$itemName) == "old" ]] || return 2
 	[[ $(getHostTime $itemName) -eq $WED ]] || return 4
@@ -692,10 +698,15 @@ main(){
 	# local failures=0
 	for unit in $listOfUnits
 	do
-		${unit}Check
+		local unitDesc="$(sed -n "s/# $unit DESCRIPTION: \(.*\)/\1/p" $PROGNAME )" # save the description comment for this unit
+		
+		${unit}Check # run this unit's checker
 		unitExitVal=$?
-		[[ $unitExitVal -eq 0 ]] && echo "$unit OK" || echo "$unit fail state $unitExitVal" #; failures=$((failures+1)); echo "failures=$failures" )
+		[[ $unitExitVal -eq 0 ]] && appendLineToReport "$unit@OK@$unitDesc" || appendLineToReport "$unit@fail state $unitExitVal@$unitDesc" #; failures=$((failures+1)); echo "failures=$failures" )
 	done
+	
+	echo -e "$report" | column -t -s "@"
+	
 	# echo "there were $failures failures"
 	echo
 	echo "end of script"
