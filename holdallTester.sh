@@ -72,7 +72,8 @@ addToLocsList(){
 # DMD = drive modified directly, as opposed to the usual situation of a modification being pushed to it from a host
 
 # units with sync time inbetween host time and rmvbl time
-unit001Initialise(){ # RT < ST < HT, UTD, should sync host>rmvbl
+# unit001 DESCRIPTION:  RT < ST < HT, UTD, should sync host>rmvbl 
+unit001Initialise(){
 	local itemName=unit001
 	addToLocsList $itemName
 	
@@ -93,7 +94,8 @@ unit001Check(){
 	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
 	return 0
 }
-unit002Initialise(){ # RT < ST < HT, NUTD, should say fork and merge host>rmvbl
+# unit002 DESCRIPTION:  RT < ST < HT, NUTD, should say fork and merge host>rmvbl 
+unit002Initialise(){
 	local itemName=unit002
 	addToLocsList $itemName
 	
@@ -114,7 +116,8 @@ unit002Check(){
 	grep "$itemName.*fork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit003Initialise(){ # HT < ST < RT, UTD, should say DMD and sync rmvbl>host
+# unit003 DESCRIPTION:  HT < ST < RT, UTD, should say DMD and sync rmvbl>host 
+unit003Initialise(){
 	local itemName=unit003
 	addToLocsList $itemName
 	
@@ -136,7 +139,8 @@ unit003Check(){
 	grep "$itemName.*removable drive.*modified directly"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit004Initialise(){ # HT < ST < RT, NUTD, should sync rmvbl>host
+# unit004 DESCRIPTION:  HT < ST < RT, NUTD, should sync rmvbl>host 
+unit004Initialise(){
 	local itemName=unit004
 	addToLocsList $itemName
 	
@@ -158,7 +162,8 @@ unit004Check(){
 }
 
 # units with sync time before both host time and mod time
-unit020Initialise(){ # ST < HT < RT, UTD, should say fork and merge rmvbl>host
+# unit020 DESCRIPTION:  ST < HT < RT, UTD, should say fork and merge rmvbl>host 
+unit020Initialise(){
 	local itemName=unit020
 	addToLocsList $itemName
 	
@@ -180,7 +185,8 @@ unit020Check(){
 	grep "$itemName.*fork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit021Initialise(){ # ST < HT < RT, NUTD, should say fork and merge rmvbl>host
+# unit021 DESCRIPTION:  ST < HT < RT, NUTD, should say fork and merge rmvbl>host 
+unit021Initialise(){
 	local itemName=unit021
 	addToLocsList $itemName
 	
@@ -201,7 +207,8 @@ unit021Check(){
 	grep "$itemName.*fork"<<<"$holdallOutput" > /dev/null || return 6
 	return 0
 }
-unit022Initialise(){ # ST < RT < HT, UTD, should say fork and merge host>rmvbl
+# unit022 DESCRIPTION:  ST < RT < HT, UTD, should say fork and merge host>rmvbl 
+unit022Initialise(){
 	local itemName=unit022
 	addToLocsList $itemName
 	
@@ -223,7 +230,8 @@ unit022Check(){
 	grep "$itemName.*fork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit023Initialise(){ # ST < RT < HT, NUTD, should say fork and merge host>rmvbl
+# unit023 DESCRIPTION:  ST < RT < HT, NUTD, should say fork and merge host>rmvbl 
+unit023Initialise(){
 	local itemName=unit023
 	addToLocsList $itemName
 	
@@ -244,7 +252,8 @@ unit023Check(){
 	grep "$itemName.*fork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit024Initialise(){ # ST < RT = HT, UTD, should say fork and do nothing
+# unit024 DESCRIPTION:  ST < RT = HT, UTD, should say fork and do nothing 
+unit024Initialise(){
 	local itemName=unit024
 	addToLocsList $itemName
 	
@@ -265,7 +274,8 @@ unit024Check(){
 	grep "$itemName.*fork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit025Initialise(){ # ST < RT = HT, NUTD, should say fork and do nothing
+# unit025 DESCRIPTION:  ST < RT = HT, NUTD, should say fork and do nothing 
+unit025Initialise(){
 	local itemName=unit025
 	addToLocsList $itemName
 	
@@ -287,7 +297,8 @@ unit025Check(){
 }
 																								  
 # units with sync time after both host time and rmvbl time
-unit030Initialise(){ # HT < RT < ST, UTD, should say error and do nothing
+# unit030 DESCRIPTION:  HT < RT < ST, UTD, should say error and do nothing 
+unit030Initialise(){
 	local itemName=unit030
 	addToLocsList $itemName
 	
@@ -308,7 +319,8 @@ unit030Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit031Initialise(){ # HT < RT < ST, NUTD, should sync rmvbl>host
+# unit031 DESCRIPTION:  HT < RT < ST, NUTD, should sync rmvbl>host 
+unit031Initialise(){
 	local itemName=unit031
 	addToLocsList $itemName
 	
@@ -328,7 +340,8 @@ unit031Check(){
 	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
 	return 0
 }
-unit032Initialise(){ # RT < HT < ST, UTD, should say error and do nothing
+# unit032 DESCRIPTION:  RT < HT < ST, UTD, should say error and do nothing 
+unit032Initialise(){
 	local itemName=unit032
 	addToLocsList $itemName
 	
@@ -349,7 +362,8 @@ unit032Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit033Initialise(){ # RT < HT < ST, NUTD, should say error and do nothing
+# unit033 DESCRIPTION:  RT < HT < ST, NUTD, should say error and do nothing 
+unit033Initialise(){
 	local itemName=unit033
 	addToLocsList $itemName
 	
@@ -368,7 +382,8 @@ unit033Check(){
 	[[ $(getRmvblTime $itemName) -eq $MON ]] || return 5
 	return 0
 }
-unit034Initialise(){ # RT = HT < ST, UTD, this is the "no changes" state, should do nothing
+# unit034 DESCRIPTION:  RT = HT < ST, UTD, this is the "no changes" state, should do nothing 
+unit034Initialise(){
 	local itemName=unit034
 	addToLocsList $itemName
 	
@@ -388,7 +403,8 @@ unit034Check(){
 	[[ $(getRmvblTime $itemName) -eq $MON ]] || return 5
 	return 0
 }
-unit035Initialise(){ # RT = HT < ST, NUTD, should say error and do nothing
+# unit035 DESCRIPTION:  RT = HT < ST, NUTD, should say error and do nothing 
+unit035Initialise(){
 	local itemName=unit035
 	addToLocsList $itemName
 	
@@ -410,7 +426,8 @@ unit035Check(){
 }
 
 # units with sync time simulataneous with either host time or rmvbl time
-unit040Initialise(){ # RT < HT = ST, UTD, should say error and do nothing
+# unit040 DESCRIPTION:  RT < HT = ST, UTD, should say error and do nothing 
+unit040Initialise(){
 	local itemName=unit040
 	addToLocsList $itemName
 	
@@ -431,7 +448,8 @@ unit040Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit041Initialise(){ # RT < HT = ST, NUTD, should say error and do nothing
+# unit041 DESCRIPTION:  RT < HT = ST, NUTD, should say error and do nothing 
+unit041Initialise(){
 	local itemName=unit041
 	addToLocsList $itemName
 	
@@ -451,7 +469,8 @@ unit041Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit042Initialise(){ # HT = ST < RT, UTD, should say error and do nothing
+# unit042 DESCRIPTION:  HT = ST < RT, UTD, should say error and do nothing 
+unit042Initialise(){
 	local itemName=unit042
 	addToLocsList $itemName
 	
@@ -472,7 +491,8 @@ unit042Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit043Initialise(){ # HT = ST < RT, NUTD, should say error and do nothing
+# unit043 DESCRIPTION:  HT = ST < RT, NUTD, should say error and do nothing 
+unit043Initialise(){
 	local itemName=unit043
 	addToLocsList $itemName
 	
@@ -492,7 +512,8 @@ unit043Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit044Initialise(){ # HT < ST = RT, UTD, should say error and do nothing
+# unit044 DESCRIPTION:  HT < ST = RT, UTD, should say error and do nothing 
+unit044Initialise(){
 	local itemName=unit044
 	addToLocsList $itemName
 	
@@ -513,7 +534,8 @@ unit044Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit045Initialise(){ # HT < ST = RT, NUTD, should say error and do nothing
+# unit045 DESCRIPTION:  HT < ST = RT, NUTD, should say error and do nothing 
+unit045Initialise(){
 	local itemName=unit045
 	addToLocsList $itemName
 	
@@ -533,7 +555,8 @@ unit045Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit046Initialise(){ # RT = ST < HT, UTD, should say error and do nothing
+# unit046 DESCRIPTION:  RT = ST < HT, UTD, should say error and do nothing 
+unit046Initialise(){
 	local itemName=unit046
 	addToLocsList $itemName
 	
@@ -554,7 +577,8 @@ unit046Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit047Initialise(){ # RT = ST < HT, NUTD, should say error and do nothing
+# unit047 DESCRIPTION:  RT = ST < HT, NUTD, should say error and do nothing 
+unit047Initialise(){
 	local itemName=unit047
 	addToLocsList $itemName
 	
@@ -574,7 +598,8 @@ unit047Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit048Initialise(){ # RT = ST = HT, UTD, should say error and do nothing
+# unit048 DESCRIPTION:  RT = ST = HT, UTD, should say error and do nothing 
+unit048Initialise(){
 	local itemName=unit048
 	addToLocsList $itemName
 	
@@ -595,7 +620,8 @@ unit048Check(){
 	grep "$itemName.*[Ww]arning"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
-unit048Initialise(){ # RT = ST = HT, NUTD, should say error and do nothing
+# unit048 DESCRIPTION:  RT = ST = HT, NUTD, should say error and do nothing 
+unit048Initialise(){
 	local itemName=unit048
 	addToLocsList $itemName
 	
