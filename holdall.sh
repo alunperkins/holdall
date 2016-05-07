@@ -41,7 +41,14 @@ readonly WARNINGUnexpectedSyncStatusAbsence="Warning: The items both exist but t
 readonly WARNINGFork="Warning: The item has been forked - the removable drive and host version have independent changes. "
 readonly WARNINGUnexpectedlyNotOnUpToDateList="Warning: The item is showing no changes since last recorded sync but this host is not listed as having the latest changes. "
 readonly WARNINGUnexpectedDifference="Warning: The items differ even though the items' last modifications are dated before their last sync"
-readonly WARNINGAmbiguousTimings="Warning: Showing a simulataneous modification and synchronisation - the situation is ambiguous. " 
+readonly WARNINGAmbiguousTimings="Warning: Showing a simulataneous modification and synchronisation - the situation is ambiguous. "
+
+readonly WARNINGUnreachableState="Warning: The items' states and sync record are in a state that should be unreachable. " 
+#readonly WARNINGMissingSyncTime="Warning: The item exists on both the host and the removable drive, but there is no recorded sync time. "
+#readonly WARNINGMissingRmvbl="Warning: There is a record of syncing, but the item was not found on the removable drive. "
+#readonly WARNINGMissingHost="Warning: There is a record of syncing, but the item was not found on the host. "
+#readonly WARNINGMissingItems="Warning: There is a record of syncing, but the item wasn't found on the host nor the removable drive. "
+
 readonly MESSAGEAlreadyInSync="No changes since last synchronisation. "
 readonly MESSAGESyncingRmvblToHost="Syncing removable drive >> host"
 readonly MESSAGESyncingHostToRmvbl="Syncing host >> removable drive"
