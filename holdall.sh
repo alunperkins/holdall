@@ -415,10 +415,7 @@ createLocsListTemplate(){
 	# /home/mike/work/spreadsheets    # because I can't work without them!
 	# /home/mike/Documents/contactsList.xml 
 	# /home/mike/Documents/systemspecs.pdf|systemspecsOf$HOSTNAME.pdf 
-	# /home/mike/Documents/myScripts 
-	# /media/internalHDD/myScripts|myScriptsHDD 
-	# /media/internalHDD/Pictures/motivationalPosters 
-	# /home/mike/work/stupidReport.pdf|importantReading.pdf 
+	# /home/mike/Documents/myScripts # /media/internalHDD/myScripts|myScriptsHDD # /media/internalHDD/Pictures/motivationalPosters # /home/mike/work/stupidReport.pdf|importantReading.pdf 
 	# ---(end of examples)---
 	_EOF_
 }
@@ -442,6 +439,21 @@ noSyncStatusFileDialog(){
 	else
 		echo "not generating a file"
 	fi
+}
+xdgOpenLocsListDialog(){
+	local input=""
+	if [[ $AUTOMATIC != "on" ]]
+	then
+		echo "   open the locations-list file for editing (in your default editor)?"
+		echo "   $YES to open"
+		echo "   $CANCEL to take no action"
+		read -p '   > ' input </dev/tty 
+	else
+		echo "Automatic mode set - not opening the locations-list file in your default editor."
+		input="$CANCEL" # obvs no point in opening the editor if the user doesn't want to have to interact
+	fi
+	if [[ $input == $YES ]]; then xdg-open $LOCSLIST; fi
+	return 0
 }
 eraseItemFromStatusFileDialog(){
 	local itemName="$1"
@@ -931,6 +943,7 @@ main(){
 		echo "the locations-list file is empty. You can:"
 		echo " - add a single file/folder to it with the -s option (see help)"
 		echo " - or edit the file directly at: $LOCSLIST"
+		xdgOpenLocsListDialog
 		exit 0
 	fi
 	getVerbose && echo found $noOfEntriesInLocsList entries in locations-list file
