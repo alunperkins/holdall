@@ -415,7 +415,10 @@ createLocsListTemplate(){
 	# /home/mike/work/spreadsheets    # because I can't work without them!
 	# /home/mike/Documents/contactsList.xml 
 	# /home/mike/Documents/systemspecs.pdf|systemspecsOf$HOSTNAME.pdf 
-	# /home/mike/Documents/myScripts # /media/internalHDD/myScripts|myScriptsHDD # /media/internalHDD/Pictures/motivationalPosters # /home/mike/work/stupidReport.pdf|importantReading.pdf 
+	# /home/mike/Documents/myScripts 
+	# /media/internalHDD/myScripts|myScriptsHDD 
+	# /media/internalHDD/Pictures/motivationalPosters 
+	# /home/mike/work/stupidReport.pdf|importantReading.pdf 
 	# ---(end of examples)---
 	_EOF_
 }
