@@ -309,7 +309,7 @@ listLocsListContents(){
 	echo -------other files/folders on the removable drive-------
 	echo "$listItemsNotSyncedButAreSyncable"
 	
-	scanLocsList
+	scanLocsList || xdgOpenLocsListDialogAndExit
 	exit 0
 }
 scanLocsList(){
@@ -363,8 +363,9 @@ scanLocsList(){
 		echo ""
 		echo "error: there are repeated locations in the locations-list file. Please open it and check these locations:"
 		echo "$listOfRepeatedLocations"
+		echo ""
 	fi
-	if [[ ! -z "$listOfRepeatedNames" || ! -z "$listOfRepeatedLocations" ]]; then exit 9; fi
+	if [[ ! -z "$listOfRepeatedNames" || ! -z "$listOfRepeatedLocations" ]]; then echo "You can view the locations-list file by running $PROGNAME with option -l"; return 9; fi # exit 9; fi
 	
 	# if there are no repeats then check for a presence of both a directory and its subdirectory (may malfunction if there are repeated names/locations)
 	# (this doesn't read links, so it's just checking if locations are substrings of each other.)
@@ -449,6 +450,21 @@ noSyncStatusFileDialog(){
 	else
 		echo "not generating a file"
 	fi
+}
+xdgOpenLocsListDialogAndExit(){
+	local input=""
+	if [[ $AUTOMATIC != "on" ]]
+	then
+		echo "   open the locations-list file for editing (in your default editor)?"
+		echo "   $YES to open"
+		echo "   $CANCEL to take no action"
+		read -p '   > ' input </dev/tty 
+	else
+		echo "Automatic mode set - not opening the locations-list file in your default editor."
+		input="$CANCEL" # obvs no point in opening the editor if the user doesn't want to have to interact
+	fi
+	if [[ $input == $YES ]]; then xdg-open $LOCSLIST; fi
+	exit 9 # return 0
 }
 eraseItemFromStatusFileDialog(){
 	local itemName="$1"
@@ -929,7 +945,7 @@ main(){
 	then
 		listLocsListContents # prints/explains contents of LOCSLIST and exits
 	fi
-	scanLocsList # exits if there are issues with contents of $LOCSLIST
+	scanLocsList || xdgOpenLocsListDialogAndExit # scanLocsList returns false if there are issues with contents of $LOCSLIST
 	noOfEntriesInLocsList=$(cleanCommentsAndWhitespace $LOCSLIST \
 	   | grep -v '^\s*$' \
 	   | wc -l \
@@ -938,6 +954,7 @@ main(){
 		echo "the locations-list file is empty. You can:"
 		echo " - add a single file/folder to it with the -s option (see help)"
 		echo " - or edit the file directly at: $LOCSLIST"
+		xdgOpenLocsListDialogAndExit
 		exit 0
 	fi
 	getVerbose && echo found $noOfEntriesInLocsList entries in locations-list file
