@@ -17,6 +17,7 @@ readonly OVRDSYNC=s
 readonly OVRDERASERECORD=e
 readonly OVRDERASEITEM=d
 readonly OVRDDELFROMLOCSLIST=j
+readonly OVRDAREYOUSUREYES=!
 
 # unique letter codes for passing arguments (not seen by user)
 readonly DIRECTIONRMVBLTOHOST=SDRTH
@@ -262,9 +263,9 @@ addLocationToLocsList(){
 	return $?
 }
 deleteLocationFromLocsList(){
-	local lineToDelete="$1"
-	echo "commenting out the line $lineToDelete from the locations-list file [for this host only]"
-	getPermission "Is that correct?" && (getPretend || sed -ri "s/^\s*$lineToDelete\s*(#.*)?$/#&/" $LOCSLIST) # "-i" mean edit in place, "-r" means extended regex, (#.*)? means 0 or 1 instances of a hash followed by any characters i.e. an optional comment
+	local locationToDeleteRaw="$1"
+	echo "commenting out the line $locationToDeleteRaw from the locations-list file [for this host only]"
+	getPermission "Is that correct?" && (getPretend || sed -ri "s/^\s*$locationToDeleteRaw\s*(|.*)?\s*(#.*)?$/#&/" $LOCSLIST) # "-i" mean edit in place, "-r" means extended regex, (|.*)? means 0 or 1 instances of a | followed by any characters i.e. an optional itemAlias, (#.*)? means 0 or 1 instances of a hash followed by any characters i.e. an optional comment
 	return $?
 }
 listLocsListContents(){
@@ -523,12 +524,12 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 		if [[ $itemRmvblModTime -gt $itemHostModTime ]]
 		then
 			echo "writing newer $itemRmvblLoc from $itemRmvblModTimeReadable onto $itemHostLoc from $itemHostModTimeReadable"
-			merge "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+			getPermission "want to merge removable >>> to >>> host" && merge "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 		else 
 			if [[ $itemRmvblModTime -lt $itemHostModTime ]]
 			then
 				echo "writing newer $itemHostLoc from $itemHostModTimeReadable onto $itemRmvblLoc from $itemRmvblModTimeReadable"
-				merge "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+				getPermission "want to merge host >>> to >>> removable" && merge "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
 			else # then mod times must be equal
 				echo "but both versions have the same modification time. Taking no action."
 			fi
@@ -567,16 +568,16 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 		read -p '   > ' input </dev/tty
 		case $input in
 			$OVRDHOSTTORMVBL)
-				synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+				getPermission "want to sync host >>> to >>> removable" && synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
 				;;
 			$OVRDRMVBLTOHOST)
-				synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+				getPermission "want to sync removable >>> to >>> host" && synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 				;;
 			$OVRDMERGEHOSTTORMVBL)
-				merge "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+				getPermission "want to merge host >>> to >>> removable" && merge "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
 				;;
 			$OVRDMERGERMVBLTOHOST)
-				merge "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+				getPermission "want to merge removable >>> to >>> host" && merge "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 				;;
 			*)
 				appendLineToSummary "$itemName $SUMMARYTABLEskip"
@@ -626,9 +627,9 @@ unexpectedAbsenceDialog(){
 		$OVRDSYNC)
 			if [[ $absentItem == "removable" ]]
 			then
-				synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+				getPermission "want to sync host >>> to >>> removable" && synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
 			else # then can assume $absentItem == "host"
-				synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+				getPermission "want to sync removable >>> to >>> host" && synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 			fi
 			;;
 		$OVRDERASERECORD)
@@ -640,19 +641,24 @@ unexpectedAbsenceDialog(){
 	esac
 }
 hostMissingDialog(){
+	local itemName="$1"
+	local itemRmvblLoc="$2"
+	local itemHostLoc="$3"
+	local itemHostLocRaw="$4"
+	
 	# if there is a record of synchronisation, but the host [no longer] exists
 	# give the options: propagate the deletion of this item to the removable drive OR reinstate it on host from removable drive copy OR cancel synchronisation i.e. delete from locs list
 	if [[ $AUTOMATIC == "on" ]]
 	then
 		echo -n "Automatic mode on > "
 		echo ?
-		local input=?
+		local input=$NOOVRD
 	else
 		# the dialog
-		echo "   $? to "
-		echo "   $? to "
-		echo "   $? to "
-		echo "   $? to "
+		echo "   $OVRDSYNC to copy the removable drive copy onto this host (e.g. if the host version was deleted in error)"
+		echo "   $OVRDDELFROMLOCSLIST to stop synchronising this item between this host and the removable drive (now and in the future), but to leave other hosts unaffected"
+		echo "   $OVRDERASEITEM to erase the item from the removable drive - i.e. to propagate the deletion to other hosts, so that this item is deleted from ALL your computers"
+		echo "   $NOOVRD to take no action"
 		local input=""
 		read -p '   > ' input </dev/tty
 	fi
@@ -660,13 +666,14 @@ hostMissingDialog(){
 	# taking action
 	case $input in
 		$OVRDSYNC)
-			?
+			getPermission "want to sync removable >>> to >>> host" && synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 			;;
 		$OVRDERASEITEM)
-			?
+			# ask "are you sure? and look for answer $OVRDAREYOUSUREYES"
+			deleteItem "$itemRmvblLoc"
 			;;
 		$OVRDDELFROMLOCSLIST)
-			?
+			deleteLocationFromLocsList "$itemHostLocRaw"
 			;;
 		*)
 			echo "$itemName: taking no action"
@@ -674,7 +681,7 @@ hostMissingDialog(){
 	esac 
 }
 
-synchronise(){
+synchronise(){ # caller should have ALREADY obtained permission with getPermission or user input, but the pretend mode check getPretend is handled in syncSourceToDest
 	# once the caller has decided which direction to sync, this function handles the multiple steps involved
 	# 1. Synchronising with rsync in syncSourceToDest  2. removing old backups at dest  3. updating the status
 	
@@ -906,6 +913,15 @@ mergeSourceToDest(){
 	
 	if [[ $copyExitVal -ne 0 ]]; then echo "WARNING: copy command returned error - exit status $copyExitVal - assuming complete failure"; fi
 	return $copyExitVal
+}
+deleteItem(){
+	local destLoc="$1"
+	local rmOptsString="-r"
+	getVerbose && rmOptsString="$rmOptsString"v # it's pretty clear that $rmOptsString contains either "-r" or "-rv", robustly
+	echo "deleting $destLoc"
+	# for robust safety of the rm command, let's make sure the variable $oldBackupName is of the pattern XXXX, before allowing the rm command to see it
+	[[ "$destLoc" =~ ^$ ]] &&  getPermission "want to delete item $destLoc" && (getPretend || rm $rmOptsString "$destLoc")
+	[[ "$destLoc" =~ ^$ ]] || echo "variable containing path to rm contained an invalid value "$destLoc". Did not rm. Please report a bug to a maintainer."
 }
 
 readOptions(){
