@@ -939,6 +939,9 @@ unit092Check(){
 main(){
 	[[ -f $HOST ]] && (echo "there is a file with the name $HOST that I wanted to use as a folder name"; exit 1)
 	[[ -f $RMVBL ]] && (echo "there is a file with the name $RMVBL that I wanted to use as a folder name"; exit 2)
+
+	local holdallCustomOptions="$@"
+	if [[ ! -z $holdallCustomOptions ]]; then echo "custom options are being used - the tests are not designed for any custom options!"; fi
 	
 	echo
 	# delete contents of $HOST and $RMVBL
@@ -967,7 +970,7 @@ main(){
 	echo
 	echo "running holdall"
 	# run holdall
-	readonly holdallOutput="$(bash holdall.sh -b 1 -a holdAllTesterSimulatedRmvbl)" # store output in GLOBAL VARIABLE!
+	readonly holdallOutput="$(bash holdall.sh $holdallCustomOptions -b 1 -a holdAllTesterSimulatedRmvbl)" # store output in GLOBAL VARIABLE!
 	echo "_________________________________________________________________________________"
 	echo "$holdallOutput"
 	echo "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
@@ -988,6 +991,8 @@ main(){
 	echo -e "$report" | column -t -s "@"
 	
 	# echo "there were $failures failures"
+	echo 
+	if [[ ! -z $holdallCustomOptions ]]; then echo "BUT custom options were used"; fi
 	echo
 	echo "end of script"
 }

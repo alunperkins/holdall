@@ -15,6 +15,8 @@ readonly OVRDMERGEHOSTTORMVBL=4
 readonly OVRDMERGERMVBLTOHOST=6
 readonly OVRDSYNC=s
 readonly OVRDERASERECORD=e
+readonly OVRDERASEITEM=d
+readonly OVRDDELFROMLOCSLIST=j
 
 # unique letter codes for passing arguments (not seen by user)
 readonly DIRECTIONRMVBLTOHOST=SDRTH
@@ -56,7 +58,7 @@ readonly MESSAGEMergingRmvblToHost="Merging removable drive >> host"
 readonly MESSAGEMergingHostToRmvbl="Merging host >> removable drive"
 
 # text for the summary table
-summary="ITEM HOST RMVBL TYPE" # non-readonly global variable! 
+summary="ITEM HOST RMVBL TYPE" # this is a non-readonly global variable! Each line of the summary is appended to this variable as we go.
 readonly SUMMARYTABLEsyncHostToRmvbl=". ->| sync"
 readonly SUMMARYTABLEsyncRmvblToHost="|<- . sync"
 readonly SUMMARYTABLEmergeHostToRmvbl=". +>| merge"
@@ -253,10 +255,16 @@ cleanCommentsAndWhitespace(){
 	)"
 	echo "$outputFile"
 }
-addLocation(){
+addLocationToLocsList(){
 	local locationToAdd="$1"
 	echo appending the text "'$locationToAdd'" as a line at the end of the locations-list file.
 	getPermission "Is that correct?" && (getPretend || echo "$locationToAdd" >> $LOCSLIST)
+	return $?
+}
+deleteLocationFromLocsList(){
+	local lineToDelete="$1"
+	echo "commenting out the line $lineToDelete from the locations-list file [for this host only]"
+	getPermission "Is that correct?" && (getPretend || sed -ri "s/^\s*$lineToDelete\s*(#.*)?$/#&/" $LOCSLIST) # "-i" mean edit in place, "-r" means extended regex, (#.*)? means 0 or 1 instances of a hash followed by any characters i.e. an optional comment
 	return $?
 }
 listLocsListContents(){
@@ -631,6 +639,40 @@ unexpectedAbsenceDialog(){
 			;;
 	esac
 }
+hostMissingDialog(){
+	# if there is a record of synchronisation, but the host [no longer] exists
+	# give the options: propagate the deletion of this item to the removable drive OR reinstate it on host from removable drive copy OR cancel synchronisation i.e. delete from locs list
+	if [[ $AUTOMATIC == "on" ]]
+	then
+		echo -n "Automatic mode on > "
+		echo ?
+		local input=?
+	else
+		# the dialog
+		echo "   $? to "
+		echo "   $? to "
+		echo "   $? to "
+		echo "   $? to "
+		local input=""
+		read -p '   > ' input </dev/tty
+	fi
+	
+	# taking action
+	case $input in
+		$OVRDSYNC)
+			?
+			;;
+		$OVRDERASEITEM)
+			?
+			;;
+		$OVRDDELFROMLOCSLIST)
+			?
+			;;
+		*)
+			echo "$itemName: taking no action"
+			;;
+	esac 
+}
 
 synchronise(){
 	# once the caller has decided which direction to sync, this function handles the multiple steps involved
@@ -870,6 +912,7 @@ readOptions(){
 	PRETEND="off"
 	VERBOSE="off"
 	AUTOMATIC="off"
+	AUTOMATICFLAGPRESENT="no"
 	NOOFBACKUPSTOKEEP=$DEFAULTNOOFBACKUPSTOKEEP
 	CUSTOMLOCATIONSFILE=""
 	ADDEDLOCATION=""
@@ -882,7 +925,7 @@ readOptions(){
 		h)	showHelp; exit 0;;
 		p)	readonly PRETEND="on"; echo PRETEND MODE;; # leaves messages unchanged but doesn't actually do any writes
 		v)	readonly VERBOSE="on";; 
-		a)	readonly AUTOMATIC="on";; # automatically answers dialogs, does not require keyboard input
+		a)	readonly AUTOMATICFLAGPRESENT="yes";; # readonly AUTOMATIC="on";; # automatically answers dialogs, does not require keyboard input
 		f)	readonly CUSTOMLOCATIONSFILE="$OPTARG";;
 		b)	readonly NOOFBACKUPSTOKEEP="$OPTARG";;
 		s)	readonly ADDEDLOCATION="$OPTARG";;
@@ -891,6 +934,9 @@ readOptions(){
 		\?)	echo invalid option "$OPTARG"; exit 1;;
 		esac
 	done
+	
+	if [[ $AUTOMATICFLAGPRESENT="yes" && $INTERACTIVEMODE="off" ]]; then readonly AUTOMATIC="on"; fi
+	if [[ $AUTOMATICFLAGPRESENT="yes" && $INTERACTIVEMODE="on" ]]; then echo "cannot set automatic mode and interactive mode at once - interactive mode taking precedence."; fi
 	
 	# check that number of backups to keep is a positive integer === a string containing only digits
 	if [[ "$NOOFBACKUPSTOKEEP" =~ .*[^[:digit:]].* ]]
@@ -938,7 +984,7 @@ main(){
 	if [[ ! -z "$ADDEDLOCATION" ]]
 	then
 		if [[ ! -w $LOCSLIST ]]; then echo $ERRORMESSAGEUnwritableLocsList; exit 8; fi
-		addLocation "$ADDEDLOCATION"
+		addLocationToLocsList "$ADDEDLOCATION"
 	fi
 	# if we are in list mode then list the contents of LOCSLIST and exit
 	if [[ $LISTMODE == "on" ]]
