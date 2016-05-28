@@ -935,8 +935,8 @@ readOptions(){
 		esac
 	done
 	
-	if [[ $AUTOMATICFLAGPRESENT="yes" && $INTERACTIVEMODE="off" ]]; then readonly AUTOMATIC="on"; fi
-	if [[ $AUTOMATICFLAGPRESENT="yes" && $INTERACTIVEMODE="on" ]]; then echo "cannot set automatic mode and interactive mode at once - interactive mode taking precedence."; fi
+	if [[ $AUTOMATICFLAGPRESENT == "yes" && $INTERACTIVEMODE == "off" ]]; then readonly AUTOMATIC="on"; fi
+	if [[ $AUTOMATICFLAGPRESENT == "yes" && $INTERACTIVEMODE == "on" ]]; then echo "cannot set automatic mode and interactive mode at once - interactive mode taking precedence."; fi
 	
 	# check that number of backups to keep is a positive integer === a string containing only digits
 	if [[ "$NOOFBACKUPSTOKEEP" =~ .*[^[:digit:]].* ]]
