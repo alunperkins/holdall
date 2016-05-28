@@ -970,10 +970,11 @@ main(){
 	echo
 	echo "running holdall"
 	# run holdall
-	readonly holdallOutput="$(bash holdall.sh $holdallCustomOptions -b 1 -a holdAllTesterSimulatedRmvbl)" # store output in GLOBAL VARIABLE!
+	#readonly holdallOutput="$(bash holdall.sh $holdallCustomOptions -b 1 -a holdAllTesterSimulatedRmvbl)" # store output in GLOBAL VARIABLE!
 	echo "_________________________________________________________________________________"
-	echo "$holdallOutput"
+	bash holdall.sh $holdallCustomOptions -b 1 -a holdAllTesterSimulatedRmvbl | tee holdallTesterHoldallSavedOutput
 	echo "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+	readonly holdallOutput="$(cat holdallTesterHoldallSavedOutput)" # global variable!
 	
 	# run all the checkers
 	echo 
