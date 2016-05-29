@@ -263,13 +263,13 @@ cleanCommentsAndWhitespace(){
 addLocationToLocsList(){
 	local locationToAdd="$1"
 	echo appending the text "'$locationToAdd'" as a line at the end of the locations-list file.
-	getPermission "Is that correct?" && (getPretend || echo "$locationToAdd" >> $LOCSLIST)
+	getPermission "Is that correct?" && (getPretend || echo "$locationToAdd" >> "$LOCSLIST")
 	return $?
 }
 deleteLocationFromLocsList(){
 	local locationToDeleteRaw="$1"
 	echo "commenting out the line $locationToDeleteRaw from the locations-list file [for this host only]"
-	getPermission "Is that correct?" && (getPretend || sed -ri "s/^\s*$locationToDeleteRaw\s*(|.*)?\s*(#.*)?$/#&/" $LOCSLIST) # "-i" mean edit in place, "-r" means extended regex, (|.*)? means 0 or 1 instances of a | followed by any characters i.e. an optional itemAlias, (#.*)? means 0 or 1 instances of a hash followed by any characters i.e. an optional comment
+	getPermission "Is that correct?" && (getPretend || sed -ri "s:^\s*$locationToDeleteRaw\s*(|.*)?\s*(#.*)?$:#&:" "$LOCSLIST") # "-i" mean edit in place, "-r" means extended regex, (|.*)? means 0 or 1 instances of a | followed by any characters i.e. an optional itemAlias, (#.*)? means 0 or 1 instances of a hash followed by any characters i.e. an optional comment
 	return $?
 }
 listLocsListContents(){
@@ -279,7 +279,7 @@ listLocsListContents(){
 	echo "(the basename of these locations is used as the file/folder name on the removable drive, unless indicated)"
 	echo ""
 	echo -------synced files/folders-------
-	cleanCommentsAndWhitespace $LOCSLIST \
+	cleanCommentsAndWhitespace "$LOCSLIST" \
 	| sed \
 		-e "s:|\(.*\):\t <- (syncs to different name '\1'):" 
 		# using ":" instead of "/" as delimeter in "sed s-match-replace" because at runtime $RMVBLDIR will itself contain one or more "/"
@@ -489,7 +489,7 @@ eraseItemFromStatusFileDialog(){
 		local input=""
 		read -p '   > ' input </dev/tty # </dev/tty means read from keyboard, not from redirects. Since this is inside the redirected while loop it must avoid being redirected too
 	else
-		echo Automatic mode set - erasing this item from the status
+		echo "Automatic mode set - erasing this item from the status"
 		echo "creating backup of current status $SYNCSTATUSFILE in $SYNCSTATUSFILE.bckp"
 		getPretend || cp $SYNCSTATUSFILE $SYNCSTATUSFILE.bckp
 		local input=$YES
@@ -507,7 +507,7 @@ eraseItemFromStatusFileDialog(){
 eraseItemFromStatusFile(){
 	getPretend && return 0
 	local itemName="$1"
-	sed -e "s/^$itemName $HOSTNAME LASTSYNCDATE .*//" -e "s/\(^$itemName UPTODATEHOSTS.*\) $HOSTNAME,\(.*\)/\1\2/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE"
+	sed -e "s/^$itemName $HOSTNAME LASTSYNCDATE .*//" -e "s/\(^$itemName UPTODATEHOSTS.*\) $HOSTNAME,\(.*\)/\1\2/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	grep -v '^\s*$' <"$SYNCSTATUSFILE" | sort >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE"
 	echoToLog "$itemName, erased from sync data file"
 }
@@ -554,8 +554,8 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 		if [[ -d "$itemRmvblLoc" ]] # if a directory: show diff of recursive dir contents and list files that differ
 		then
 			# use a sed to remove the unwanted top-level directory address, leaving just the part of the file address relative to $itemHostLoc($itemRmvblLoc)
-			local unsyncedModificationsHost=$(sed "s:^$itemHostLoc/::" <(find $itemHostLoc -newermt @$itemSyncTime | sort))
-			local unsyncedModificationsRmvbl=$(sed "s:^$itemRmvblLoc/::" <(find $itemRmvblLoc -newermt @$itemSyncTime | sort))
+			local unsyncedModificationsHost=$(sed "s:^$itemHostLoc/::" <(find $itemHostLoc -newermt @$itemSyncTime | sort)) # WATCH OUT for hard/soft quoting in sed here!
+			local unsyncedModificationsRmvbl=$(sed "s:^$itemRmvblLoc/::" <(find $itemRmvblLoc -newermt @$itemSyncTime | sort)) # WATCH OUT for hard/soft quoting in sed here!
 			diff -y <(echo -e "$unsyncedModificationsHost") <(echo -e "$unsyncedModificationsRmvbl")
 		else # if a file: show diff of the two files
 			diff -y --suppress-common-lines "$itemHostLoc" "$itemRmvblLoc"
@@ -598,11 +598,11 @@ unexpectedAbsenceDialog(){
 	
 	case $absentItem in
 		"host")
-			echo Host item $itemHostLoc expected but does not exist
+			echo "Host item $itemHostLoc expected but does not exist"
 			local absenceMessage="sync $itemRmvblLoc on removable drive onto $itemHostLoc"
 			;;
 		"removable")
-			echo Removable drive item $itemRmvblLoc expected but does not exist
+			echo "Removable drive item $itemRmvblLoc expected but does not exist"
 			local absenceMessage="sync $itemHostLoc on host onto $itemRmvblLoc"
 			;;
 		*)
@@ -652,6 +652,7 @@ hostMissingDialog(){
 	
 	# if there is a record of synchronisation, but the host [no longer] exists
 	# give the options: propagate the deletion of this item to the removable drive OR reinstate it on host from removable drive copy OR cancel synchronisation i.e. delete from locs list
+	echo "you can sync so that it is present on both the host and the removable drive, or sync so that it is absent from both, or cancel syncing."
 	if [[ $AUTOMATIC == "on" ]]
 	then
 		echo -n "Automatic mode on > " 
@@ -672,11 +673,80 @@ hostMissingDialog(){
 			getPermission "want to sync removable >>> to >>> host" && synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
 			;;
 		$OVRDERASEITEM)
-			# ask "are you sure? and look for answer $OVRDAREYOUSUREYES"
+			# ask "are you sure?" and look for answer $OVRDAREYOUSUREYES, which should be something that won't be typed by accident
 			echo "are you sure you want to permanently delete $itemRmvblLoc ? Type $OVRDAREYOUSUREYES if you are."
 			read -p '   > ' input </dev/tty
-			[[ $input == $OVRDAREYOUSUREYES ]] && deleteItem "$itemRmvblLoc"
+			[[ $input == $OVRDAREYOUSUREYES ]] && deleteItem "$itemRmvblLoc" || echo "$itemName: taking no action"
 			;;
+		$OVRDDELFROMLOCSLIST)
+			deleteLocationFromLocsList "$itemHostLocRaw"
+			;;
+		*)
+			echo "$itemName: taking no action"
+			;;
+	esac 
+}
+rmvblMissingDialog(){
+	local itemName="$1"
+	local itemRmvblLoc="$2"
+	local itemHostLoc="$3"
+	local itemHostLocRaw="$4"
+	
+	# if there is a record of synchronisation, but the host [no longer] exists
+	# give the options: propagate the deletion of this item to the removable drive OR reinstate it on host from removable drive copy OR cancel synchronisation i.e. delete from locs list
+	echo "you can sync so that it is present on both the host and the removable drive, or sync so that it is absent from both, or cancel syncing."
+	if [[ $AUTOMATIC == "on" ]]
+	then
+		echo -n "Automatic mode on > " 
+		local input=$NOOVRD
+	else
+		# the dialog
+		echo "   $OVRDSYNC to copy the host copy onto the removable drive (e.g. if the removable drive version was deleted in error)"
+		echo "   $OVRDDELFROMLOCSLIST to stop synchronising this item between this host and the removable drive (now and in the future), but to leave other hosts' settings unaffected"
+		echo "   $OVRDERASEITEM to erase the item from this host"
+		echo "   $NOOVRD to take no action"
+		local input=""
+		read -p '   > ' input </dev/tty
+	fi
+	
+	# taking action
+	case $input in
+		$OVRDSYNC)
+			getPermission "want to sync host >>> to >>> removable" && synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+			;;
+		$OVRDERASEITEM)
+			# ask "are you sure?" and look for answer $OVRDAREYOUSUREYES, which should be something that won't be typed by accident
+			echo "are you sure you want to permanently delete $itemHostLoc? Type $OVRDAREYOUSUREYES if you are."
+			read -p '   > ' input </dev/tty
+			[[ $input == $OVRDAREYOUSUREYES ]] && deleteItem "$itemHostLoc" || echo "$itemName: taking no action"
+			;;
+		$OVRDDELFROMLOCSLIST)
+			deleteLocationFromLocsList "$itemHostLocRaw"
+			;;
+		*)
+			echo "$itemName: taking no action"
+			;;
+	esac 
+}
+deleteLocationFromLocsListDialog(){
+	local itemName="$1"
+	local itemHostLocRaw="$2"
+	
+	echo "$itemName: comment out the line for this item in the locations-list file, to cancel synchronisation (now and in the future)?"
+	if [[ $AUTOMATIC == "on" ]]
+	then
+		echo -n "Automatic mode on > " 
+		local input=$NOOVRD
+	else
+		# the dialog
+		echo "   $OVRDDELFROMLOCSLIST to comment out this location from the locs list [for this host only]"
+		echo "   $NOOVRD to take no action"
+		local input=""
+		read -p '   > ' input </dev/tty
+	fi
+	
+	# taking action
+	case $input in
 		$OVRDDELFROMLOCSLIST)
 			deleteLocationFromLocsList "$itemHostLocRaw"
 			;;
@@ -836,14 +906,14 @@ writeToStatus(){
 	if [[ $hostsLineExists -ne true ]]; then echo "$itemName UPTODATEHOSTS">>$SYNCSTATUSFILE; fi
 	
 	# edit the date line to set date of last sync to current time 
-	sed "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $(date +%s)/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE"
+	sed "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $(date +%s)/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	
 	# update the hosts line
 	# this should be made into a CASE statement
 	if [[ $syncDirection == $DIRECTIONHOSTTORMVBL ]]
 	then
 		# then removable drive just accepted a change from this host, delete all other hosts from up-to-date list
-		sed "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS $HOSTNAME,/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE"
+		sed "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS $HOSTNAME,/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	else
 		if [[ $syncDirection == $DIRECTIONRMVBLTOHOST ]]
 		then
@@ -854,7 +924,7 @@ writeToStatus(){
 			if [[ alreadyOnUpToDateHostsList -ne true ]]
 			then
 				# ... then append it to up-to-date hosts list
-				sed "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" $SYNCSTATUSFILE
+				sed "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" $SYNCSTATUSFILE # WATCH OUT for hard/soft quoting in sed here!
 			fi
 		else
 			echo writeToStatus was passed invalid argument $syncDirection, there is a hard-coded fault
@@ -1079,7 +1149,7 @@ main(){
 		if [[ $itemSyncedPreviously -eq true ]]
 		then
 			# extract the sync time from the file using a regular expression
-			itemSyncTime=$(sed "s/$itemName $HOSTNAME LASTSYNCDATE \([[:digit:]][[:digit:]]*\)/\1/" <<<"$itemDateLine") #date string format is seconds since epoch 
+			itemSyncTime=$(sed "s/$itemName $HOSTNAME LASTSYNCDATE \([[:digit:]][[:digit:]]*\)/\1/" <<<"$itemDateLine") #date string format is seconds since epoch # WATCH OUT for hard/soft quoting in sed here!
 		fi
 		
 		if [[ $itemSyncedPreviously -eq true ]]
@@ -1140,6 +1210,7 @@ main(){
 				echo "$itemName: $WARNINGNonexistentItems"
 				echoToLog "$itemName, $WARNINGNonexistentItems"
 				appendLineToSummary "$itemName $SUMMARYTABLEerror"
+				deleteLocationFromLocsListDialog "$itemName" "$itemHostLocRaw"
 				echo "$itemName: skipping "
 			fi
 			continue
@@ -1162,8 +1233,8 @@ main(){
 				echo "$itemName: $WARNINGSyncedButRmvblAbsent"
 				echoToLog "$itemName, $WARNINGSyncedButRmvblAbsent"
 				appendLineToSummary "$itemName $SUMMARYTABLEerror"
-				unexpectedAbsenceDialog "$itemName" "$itemHostLoc" "$itemRmvblLoc" "removable"
-				#rmvblMissingDialog
+				# unexpectedAbsenceDialog "$itemName" "$itemHostLoc" "$itemRmvblLoc" "removable"
+				rmvblMissingDialog "$itemName" "$itemRmvblLoc" "$itemHostLoc" "$itemHostLocRaw"
 			fi
 			continue
 		fi
