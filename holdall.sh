@@ -920,8 +920,8 @@ deleteItem(){
 	getVerbose && rmOptsString="$rmOptsString"v # it's pretty clear that $rmOptsString contains either "-r" or "-rv", robustly
 	echo "deleting $destLoc"
 	# for robust safety of the rm command, let's make sure the variable $oldBackupName is of the pattern XXXX, before allowing the rm command to see it
-	[[ "$destLoc" =~ ^$ ]] &&  getPermission "want to delete item $destLoc" && (getPretend || rm $rmOptsString "$destLoc")
-	[[ "$destLoc" =~ ^$ ]] || echo "variable containing path to rm contained an invalid value "$destLoc". Did not rm. Please report a bug to a maintainer."
+	[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] &&  getPermission "want to delete item $destLoc" && (getPretend || rm -i $rmOptsString "$destLoc")
+	[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] || echo "variable containing path to rm contained an invalid value "$destLoc". Did not rm. Please report a bug to a maintainer."
 }
 
 readOptions(){
