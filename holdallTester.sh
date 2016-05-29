@@ -821,6 +821,7 @@ unit072Check(){
 	[[ $(getHostTime $itemName) -eq $TUE ]] || return 4
 	[[ $(cat $RMVBL/$itemName) == "host content" ]] || return 2
 	[[ $(getRmvblTime $itemName) -eq $TUE ]] || return 5
+	grep "$itemName: first time syncing from host to removable drive"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 
@@ -871,6 +872,7 @@ unit082Check(){
 	[[ $(getHostTime $itemName) -eq $WED ]] || return 4
 	[[ $(cat $RMVBL/$itemName) == "rmvbl content" ]] || return 2
 	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
+	grep "$itemName: first time syncing from removable drive to host"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 

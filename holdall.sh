@@ -123,6 +123,10 @@ getPermission(){
 		return 1
 	fi
 }
+DEBUG="off"
+getDebug(){
+	if [[ $DEBUG == "on" ]]; then return 0; else return 1; fi 
+}
 
 echoToLog(){ # echo $1 to log with a timestamp and hostname
 	getPretend || echo "$(date +%F,%R), $HOSTNAME, $1" >> $LOGFILE
@@ -650,8 +654,7 @@ hostMissingDialog(){
 	# give the options: propagate the deletion of this item to the removable drive OR reinstate it on host from removable drive copy OR cancel synchronisation i.e. delete from locs list
 	if [[ $AUTOMATIC == "on" ]]
 	then
-		echo -n "Automatic mode on > "
-		echo ?
+		echo -n "Automatic mode on > " 
 		local input=$NOOVRD
 	else
 		# the dialog
@@ -670,7 +673,9 @@ hostMissingDialog(){
 			;;
 		$OVRDERASEITEM)
 			# ask "are you sure? and look for answer $OVRDAREYOUSUREYES"
-			deleteItem "$itemRmvblLoc"
+			echo "are you sure you want to permanently delete $itemRmvblLoc ? Type $OVRDAREYOUSUREYES if you are."
+			read -p '   > ' input </dev/tty
+			[[ $input == $OVRDAREYOUSUREYES ]] && deleteItem "$itemRmvblLoc"
 			;;
 		$OVRDDELFROMLOCSLIST)
 			deleteLocationFromLocsList "$itemHostLocRaw"
@@ -744,7 +749,7 @@ syncSourceToDest(){
 		shortOpts="$shortOpts"b 
 		local longOptBackup="--backup-dir=$backupName" 
 	else
-		local longOptBackup=""
+		local longOptBackup="" # rsync must be passed "$longOptBackup" in quotes in case the path has a space in, but being passed an empty string in quotes (i.e. "$longOptBackup" where longOptBackup="") is interpreted as source=pwd (former BUG)
 	fi
 	getPretend && longOpts="$longOpts --dry-run" # if pretending make rsync pretend too    # note: rsync --dry-run may not always _entirely_ avoid writing to disk...?
 	
@@ -752,10 +757,17 @@ syncSourceToDest(){
 	# for proper behaviour with directories need a slash after the source, but with files this syntax would be invalid
 	if [[ -d "$sourceLoc" ]] # if it is a directory
 	then
-		rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc"/ "$destLoc"
-		copyExitVal=$?
+		if [[ $NOOFBACKUPSTOKEEP -gt 0 ]]
+		then
+			getDebug && echo "DEBUG: calling rsync $shortOpts $longOpts $longOptBackup $sourceLoc/ $destLoc"
+			rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc"/ "$destLoc"
+			copyExitVal=$?
+		else
+			getDebug && echo "DEBUG: calling rsync $shortOpts $longOpts $sourceLoc/ $destLoc"
+			rsync $shortOpts $longOpts "$sourceLoc"/ "$destLoc"
+			copyExitVal=$?
+		fi
 		
-		# NOTE that if there was a problem with the copy, the "touch" command below will still run - it shouldn't!
 		# after this routine completes, we go back down the stack to the calling routine, etc., 
 		# and very few other commands are executed.
 		# All of the other commands that are executed are OK to execute IMO even if this had failed.
@@ -768,11 +780,19 @@ syncSourceToDest(){
 		
 		# but this leaves the destination's top-level dir modification time to be 
 		# NOW instead of that of the source, so sync this final datum before finishing
-		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
+		getPretend || ([[ $copyExitVal -eq true ]] && echo "touching") #touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc") # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
 		
 	else # if it is a file
-		rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc" "$destLoc"
-		copyExitVal=$?
+		if [[ $NOOFBACKUPSTOKEEP -gt 0 ]]
+		then
+			getDebug && echo "DEBUG: calling rsync $shortOpts $longOpts $longOptBackup $sourceLoc $destLoc"
+			rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc" "$destLoc"
+			copyExitVal=$?
+		else
+			getDebug && echo "DEBUG: calling rsync $shortOpts $longOpts $sourceLoc $destLoc"
+			rsync $shortOpts $longOpts "$sourceLoc" "$destLoc"
+			copyExitVal=$?
+		fi
 	fi # END rsync FILE/FOLDER BRANCHING BLOCK
 	
 	getVerbose && echo "copy complete"
@@ -1095,6 +1115,7 @@ main(){
 			appendLineToSummary "$itemName $SUMMARYTABLEerror"
 			continue
 		fi
+		# so below here can assume UTD and !SP is excluded
 		
 		# ------ Step 3: retrieve data from this item from disk ------
 		
@@ -1131,7 +1152,7 @@ main(){
 			then 
 				# BRANCH END
 				# then sync Host onto the Rmvbl
-				echo "$itemName: exists on host but does not exist on removable drive "
+				echo "$itemName: first time syncing from host to removable drive"
 				getPermission "want to sync host >>> to >>> removable" \
 					&& synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc" \
 					|| appendLineToSummary "$itemName $SUMMARYTABLEdidNotAllowFirstTimeSyncToRmvbl"
@@ -1142,6 +1163,7 @@ main(){
 				echoToLog "$itemName, $WARNINGSyncedButRmvblAbsent"
 				appendLineToSummary "$itemName $SUMMARYTABLEerror"
 				unexpectedAbsenceDialog "$itemName" "$itemHostLoc" "$itemRmvblLoc" "removable"
+				#rmvblMissingDialog
 			fi
 			continue
 		fi
@@ -1153,7 +1175,7 @@ main(){
 			then 
 				# BRANCH END
 				# then sync Rmvbl onto Host 
-				echo "$itemName: exists on removable drive but does not exist on host"
+				echo "$itemName: first time syncing from removable drive to host"
 				getPermission "want to sync removable >>> to >>> host" \
 					&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" \
 					|| appendLineToSummary "$itemName $SUMMARYTABLEdidNotAllowFirstTimeSyncToHost"
@@ -1163,7 +1185,8 @@ main(){
 				echo "$itemName: $WARNINGSyncedButHostAbsent"
 				echoToLog "$itemName, $WARNINGSyncedButHostAbsent"
 				appendLineToSummary "$itemName $SUMMARYTABLEerror"
-				unexpectedAbsenceDialog "$itemName" "$itemHostLoc" "$itemRmvblLoc" "host"
+				#unexpectedAbsenceDialog "$itemName" "$itemHostLoc" "$itemRmvblLoc" "host"
+				hostMissingDialog "$itemName" "$itemRmvblLoc" "$itemHostLoc" "$itemHostLocRaw"
 			fi
 			continue
 		fi
@@ -1183,7 +1206,7 @@ main(){
 			fi
 			
 			# ----- logic based on comparisons of modification times -----
-
+			
 			itemRmvblModTime=$(modTimeOf "$itemRmvblLoc")
 			itemHostModTime=$(modTimeOf "$itemHostLoc")
 			getVerbose && echo from disk: mod time of version on host: $(readableDate $itemHostModTime)
@@ -1202,6 +1225,7 @@ main(){
 				chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime 0 # never synced before so pass a zero for sync time
 				continue
 			fi
+			
 			# so:
 			# -------- below here $itemSyncedPreviously is true --------
 			
@@ -1351,4 +1375,5 @@ main(){
 }
 
 main "$@"
+
 
