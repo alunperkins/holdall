@@ -96,7 +96,11 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # consider redirect input using units, instead of getting all user input from /dev/tty, so that person running program can still choose to send it input from somewhere else should they want to, like any other program
 # in fact, generally review the programs use of stdout and stderr !
 # make merges write a timestamp to destination that is ten seconds after the copy time (i.e. ten seconds in the future), so that a merge is correctly recognised as a modification
+# make merges write to the up-to-date hosts list in an appropriate way - only the merge target is now up-to-date!
+# when drive-modified-directly is recognised, make the up-to-date hosts list reflect it.
 # make automatic mode require "number of backups to keep" setting be at least 1
+# change pretend structure of writeToStatus
+# make deleteItem make mv to backup instead of simply rm
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
@@ -591,6 +595,7 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 	fi # endif [ automatic mode ]
 }
 unexpectedAbsenceDialog(){
+	# DEPRECATED
 	local itemName="$1"
 	local itemHostLoc="$2"
 	local itemRmvblLoc="$3"
@@ -676,7 +681,7 @@ hostMissingDialog(){
 			# ask "are you sure?" and look for answer $OVRDAREYOUSUREYES, which should be something that won't be typed by accident
 			echo "are you sure you want to permanently delete $itemRmvblLoc ? Type $OVRDAREYOUSUREYES if you are."
 			read -p '   > ' input </dev/tty
-			[[ $input == $OVRDAREYOUSUREYES ]] && deleteItem "$itemRmvblLoc" || echo "$itemName: taking no action"
+			[[ "$input" == "$OVRDAREYOUSUREYES" ]] && deleteItem "$itemRmvblLoc" || echo "$itemName: taking no action"
 			;;
 		$OVRDDELFROMLOCSLIST)
 			deleteLocationFromLocsList "$itemHostLocRaw"
@@ -776,7 +781,7 @@ synchronise(){ # caller should have ALREADY obtained permission with getPermissi
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $syncDirection; fi
 			echoToLog "$itemName, host copied to removable drive"
 			echoToLog "$itemname, $itemHostLoc, copied to, $itemRmvblLoc, copy exit status=$copyExitVal"
-			removeOldBackups "$itemRmvblLoc"
+			if [[ $copyExitVal -eq 0 ]]; then removeOldBackups "$itemRmvblLoc"; fi
 			
 			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvblError$copyExitVal"; fi
 			;;
@@ -786,8 +791,8 @@ synchronise(){ # caller should have ALREADY obtained permission with getPermissi
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $syncDirection; fi
 			echoToLog "$itemName, removable drive copied to host"
-			echoToLog "$itemname, $itemRmvblLoc, copied to, $itemHostLoc, copy exit status=$copyExitVal"
-			removeOldBackups "$itemHostLoc"
+			echoToLog "$itemname, $itemRmvblLoc, copied to, $itemHostLoc, copy exit status=$copyExitVal" 
+			if [[ $copyExitVal -eq 0 ]]; then removeOldBackups "$itemHostLoc"; fi
 			
 			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHost"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHostError$copyExitVal"; fi
 			;;
@@ -850,7 +855,7 @@ syncSourceToDest(){
 		
 		# but this leaves the destination's top-level dir modification time to be 
 		# NOW instead of that of the source, so sync this final datum before finishing
-		getPretend || ([[ $copyExitVal -eq true ]] && echo "touching") #touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc") # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
+		getPretend || ([[ $copyExitVal -eq true ]] && touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc") # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
 		
 	else # if it is a file
 		if [[ $NOOFBACKUPSTOKEEP -gt 0 ]]
@@ -892,7 +897,7 @@ removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not w
 	done
 }
 writeToStatus(){
-	getPretend && return 0; # in pretend mode simply skip this entire function
+	getPretend && return 0; # in pretend mode simply skip this entire function # TODO change this to using "getPretend || command" within the function
 	local itemName="$1"
 	local syncDirection="$2"
 	
@@ -1011,7 +1016,7 @@ deleteItem(){
 	echo "deleting $destLoc"
 	# for robust safety of the rm command, let's make sure the variable $oldBackupName is of the pattern XXXX, before allowing the rm command to see it
 	[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] &&  getPermission "want to delete item $destLoc" && (getPretend || rm -i $rmOptsString "$destLoc")
-	[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] || echo "variable containing path to rm contained an invalid value "$destLoc". Did not rm. Please report a bug to a maintainer."
+	[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] || echo "variable containing path to rm contained an invalid value \"$destLoc\". Did not rm. Please report a bug to a maintainer."
 }
 
 readOptions(){
