@@ -326,10 +326,14 @@ listLocsListContents(){
 	echo -------other files/folders on the removable drive-------
 	echo "$listItemsNotSyncedButAreSyncable"
 	
-	scanLocsList || xdgOpenLocsListDialogAndExit
+	scanLocsList # exits if there are problems
 	exit 0
 }
+
 scanLocsList(){
+	analyseLocsList || xdgOpenLocsListDialogAndExit
+}
+analyseLocsList(){
 	# check for repeated names/repeated locations
 	
 	# ---GUIDE TO THE PIPING/REGEX USED---
@@ -1102,7 +1106,7 @@ main(){
 	then
 		listLocsListContents # prints/explains contents of LOCSLIST and exits
 	fi
-	scanLocsList || xdgOpenLocsListDialogAndExit # scanLocsList returns false if there are issues with contents of $LOCSLIST
+	scanLocsList # exits if there are problems
 	noOfEntriesInLocsList=$(cleanCommentsAndWhitespace $LOCSLIST \
 	   | grep -v '^\s*$' \
 	   | wc -l \
