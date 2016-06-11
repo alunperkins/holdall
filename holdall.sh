@@ -86,9 +86,7 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # add a status mode where it prints the sync status of every item on the removable drive re. hosts, etc.
 # merges create a mod time that is the same as the sync time - this may be confusing - write something that deals with it
 # currently the handling of the case when the pivotal "rsync" command fails (in functions "synchronise" OR "merge") is fairly okay but is pretty unclear to someone reading the code IMO. Needs refactoring!
-# unexpectedAbsenceDialog should offer to remove the item from the locsList. That's so if a user deletes a (synced) file/folder the program can be stopped from reinstating it every time it syncs. I think that's the likely intention of the user. Restoring from the removable would still be an option.
 # add to scanLocsList a check for items on the rmvbl that are not synced with any hosts, offer to delete them
-# add an option to open the locsListFile for you, to save you having to find/type the given location yourself
 # change the -s option's function to READLINK of the "loc|alias" or "loc" text given, because it's convenient to type a relative path, but the path entered should be an absolute path
 # add option to display, in user-readable format, the current status of all hosts re. being up-to-date and their last sync time.
 # add a check that disallows items and hosts that are CALLED a keyword like LASTSYNCDATE, UPTODATEHOSTS, and possibly also ...'-removed-XXXX-XX-XX~' 
@@ -159,6 +157,11 @@ diffItems(){ # return diff $1 $2
 		itemVersionsDifference=$(diff "$itemHostLoc" "$itemRmvblLoc")
 	fi
 	echo "$itemVersionsDifference"
+}
+generateBackupName(){
+	local destLoc="$1"
+	local backupName=$(dirname "$destLoc")/$(basename "$destLoc")-removed-$(date +%F-%H%M)~
+	echo "$backupName"
 }
 noRsync(){ # deal with lack of rsync - NOT TESTED =P
 	echo $ERRORMESSAGENoRsync
@@ -727,7 +730,7 @@ rmvblMissingDialog(){
 			# ask "are you sure?" and look for answer $OVRDAREYOUSUREYES, which should be something that won't be typed by accident
 			echo "are you sure you want to permanently delete $itemHostLoc? Type $OVRDAREYOUSUREYES if you are."
 			read -p '   > ' input </dev/tty
-			[[ $input == $OVRDAREYOUSUREYES ]] && deleteItem "$itemHostLoc" || echo "$itemName: taking no action"
+			[[ "$input" == "$OVRDAREYOUSUREYES" ]] && deleteItem "$itemHostLoc" || echo "$itemName: taking no action"
 			;;
 		$OVRDDELFROMLOCSLIST)
 			deleteLocationFromLocsList "$itemHostLocRaw"
@@ -824,7 +827,7 @@ syncSourceToDest(){
 	if [[ $NOOFBACKUPSTOKEEP -gt 0 ]]
 	then 
 		# then have rsync use a backup - add 'b' and '--backup-dir=' options to the options string
-		local backupName=$(dirname "$destLoc")/$(basename "$destLoc")-removed-$(date +%F-%H%M)~
+		local backupName="$(generateBackupName "$destLoc")"
 		shortOpts="$shortOpts"b 
 		local longOptBackup="--backup-dir=$backupName" 
 	else
@@ -1000,7 +1003,7 @@ mergeSourceToDest(){
 		rsync $shortOpts $longOpts "$sourceLoc"/ "$destLoc"
 		copyExitVal=$?
 		
-		# but this leaves the destination's top-level dir modification time should definitely be NOW
+		# but the destination's top-level dir modification time should definitely be NOW
 		getPretend || touch -m "$destLoc"
 		
 	else # if it is a file
@@ -1015,12 +1018,25 @@ mergeSourceToDest(){
 }
 deleteItem(){
 	local destLoc="$1"
-	local rmOptsString="-r"
-	getVerbose && rmOptsString="$rmOptsString"v # it's pretty clear that $rmOptsString contains either "-r" or "-rv", robustly
+	# for robust safety of the rm/mv commands, make sure the variable $oldBackupName is of a suitable pattern
 	echo "deleting $destLoc"
-	# for robust safety of the rm command, let's make sure the variable $oldBackupName is of the pattern XXXX, before allowing the rm command to see it
-	[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] &&  getPermission "want to delete item $destLoc" && (getPretend || rm -i $rmOptsString "$destLoc")
-	[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] || echo "variable containing path to rm contained an invalid value \"$destLoc\". Did not rm. Please report a bug to a maintainer."
+	if [[ $NOOFBACKUPSTOKEEP -gt 0 ]]
+	then
+		# if using backups then "delete" means mv to backup
+		local backupName="$(generateBackupName "$destLoc")"
+		[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] \
+			&& getPermission "want to move item $destLoc to $backupName" \
+			&& (getPretend || \
+				if [[ $VERBOSE == "on" ]]; then mv -v "$destLoc" "$backupName" else mv "$destLoc" "$backupName")
+	else
+		# if not using backups then "delete" means rm
+		local optsString="-r"
+		getVerbose && optsString="$optsString"v # it's pretty clear that $optsString contains either "-r" or "-rv", robustly
+		[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] \
+			&& getPermission "want to delete item $destLoc" \
+			&& (getPretend || rm -i $optsString "$destLoc") # remove this "-i" option?
+	fi
+	[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] || echo "variable containing path to rm contained an invalid value \"$destLoc\". Did not mv/rm. Please report a bug to a maintainer."
 }
 
 readOptions(){
