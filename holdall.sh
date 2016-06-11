@@ -1027,7 +1027,7 @@ deleteItem(){
 		[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] \
 			&& getPermission "want to move item $destLoc to $backupName" \
 			&& (getPretend || \
-				if [[ $VERBOSE == "on" ]]; then mv -v "$destLoc" "$backupName" else mv "$destLoc" "$backupName")
+				if [[ $VERBOSE == "on" ]]; then mv -v "$destLoc" "$backupName" else mv "$destLoc" "$backupName"; fi)
 	else
 		# if not using backups then "delete" means rm
 		local optsString="-r"

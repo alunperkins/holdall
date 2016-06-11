@@ -65,12 +65,12 @@ getHostTime(){
 writeToRmvbl(){
 	local itemName="$1"
 	local message="$2"
-	echo "$message" >> $RMVBL/$itemName
+	echo "$message" >> $RMVBL/"$itemName"
 }
 writeToHost(){
 	local itemName="$1"
 	local message="$2"
-	echo "$message" >> $HOST/$itemName
+	echo "$message" >> $HOST/"$itemName"
 }
 
 setSyncTime(){
@@ -106,89 +106,89 @@ addToLocsList(){
 # unit001 DESCRIPTION:  RT < ST < HT, UTD, should sync host>rmvbl 
 unit001Initialise(){
 	local itemName=unit001
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "new"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "new"
 	
-	setRmvblTime $itemName $MON
-	setSyncTime $itemName $WED
-	setHostTime $itemName $FRI
-	setUTDTrue $itemName
+	setRmvblTime "$itemName" $MON
+	setSyncTime "$itemName" $WED
+	setHostTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit001Check(){
 	local itemName=unit001	
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(cat $RMVBL/$itemName-removed*/*) == "old" ]] || return 3
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat $RMVBL/"$itemName"-removed*/*) == "old" ]] || return 3
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	return 0
 }
 # unit002 DESCRIPTION:  RT < ST < HT, NUTD, should say fork and merge host>rmvbl 
 unit002Initialise(){
 	local itemName=unit002
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "new"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "new"
 	
-	setRmvblTime $itemName $MON
-	setSyncTime $itemName $WED
-	setHostTime $itemName $FRI
+	setRmvblTime "$itemName" $MON
+	setSyncTime "$itemName" $WED
+	setHostTime "$itemName" $FRI
 }
 unit002Check(){
 	local itemName=unit002
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(cat $RMVBL/$itemName-removed*) == "old" ]] || return 3
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat $RMVBL/"$itemName"-removed*) == "old" ]] || return 3
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit003 DESCRIPTION:  HT < ST < RT, UTD, should say DMD and sync rmvbl>host 
 unit003Initialise(){
 	local itemName=unit003
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "old"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "old"
 	
-	setHostTime $itemName $MON
-	setSyncTime $itemName $WED
-	setRmvblTime $itemName $FRI
-	setUTDTrue $itemName
+	setHostTime "$itemName" $MON
+	setSyncTime "$itemName" $WED
+	setRmvblTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit003Check(){
 	local itemName=unit003
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(cat $HOST/$itemName-removed*/*) == "old" ]] || return 3
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat $HOST/"$itemName"-removed*/*) == "old" ]] || return 3
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName.*removable drive.*modified directly"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit004 DESCRIPTION:  HT < ST < RT, NUTD, should sync rmvbl>host 
 unit004Initialise(){
 	local itemName=unit004
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "old"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "old"
 	
-	setHostTime $itemName $MON
-	setSyncTime $itemName $WED
-	setRmvblTime $itemName $FRI
+	setHostTime "$itemName" $MON
+	setSyncTime "$itemName" $WED
+	setRmvblTime "$itemName" $FRI
 }
 unit004Check(){
 	local itemName=unit004
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(cat $HOST/$itemName-removed*/*) == "old" ]] || return 3
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat $HOST/"$itemName"-removed*/*) == "old" ]] || return 3
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	return 0
 }
 
@@ -196,133 +196,133 @@ unit004Check(){
 # unit020 DESCRIPTION:  ST < HT < RT, UTD, should say fork and merge rmvbl>host 
 unit020Initialise(){
 	local itemName=unit020
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "old"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "old"
 	
-	setSyncTime $itemName $MON
-	setHostTime $itemName $WED
-	setRmvblTime $itemName $FRI
-	setUTDTrue $itemName
+	setSyncTime "$itemName" $MON
+	setHostTime "$itemName" $WED
+	setRmvblTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit020Check(){
 	local itemName=unit020
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(cat $HOST/$itemName-removed*) == "old" ]] || return 3
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat $HOST/"$itemName"-removed*) == "old" ]] || return 3
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit021 DESCRIPTION:  ST < HT < RT, NUTD, should say fork and merge rmvbl>host 
 unit021Initialise(){
 	local itemName=unit021
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "old"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "old"
 	
-	setSyncTime $itemName $MON
-	setHostTime $itemName $WED
-	setRmvblTime $itemName $FRI
+	setSyncTime "$itemName" $MON
+	setHostTime "$itemName" $WED
+	setRmvblTime "$itemName" $FRI
 }
 unit021Check(){
 	local itemName=unit021
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(cat $HOST/$itemName-removed*) == "old" ]] || return 3
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat $HOST/"$itemName"-removed*) == "old" ]] || return 3
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit022 DESCRIPTION:  ST < RT < HT, UTD, should say fork and merge host>rmvbl 
 unit022Initialise(){
 	local itemName=unit022
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "new"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "new"
 	
-	setSyncTime $itemName $MON
-	setRmvblTime $itemName $WED
-	setHostTime $itemName $FRI
-	setUTDTrue $itemName
+	setSyncTime "$itemName" $MON
+	setRmvblTime "$itemName" $WED
+	setHostTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit022Check(){
 	local itemName=unit022
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(cat $RMVBL/$itemName-removed*) == "old" ]] || return 3
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat $RMVBL/"$itemName"-removed*) == "old" ]] || return 3
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit023 DESCRIPTION:  ST < RT < HT, NUTD, should say fork and merge host>rmvbl 
 unit023Initialise(){
 	local itemName=unit023
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "new"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "new"
 	
-	setSyncTime $itemName $MON
-	setRmvblTime $itemName $WED
-	setHostTime $itemName $FRI
+	setSyncTime "$itemName" $MON
+	setRmvblTime "$itemName" $WED
+	setHostTime "$itemName" $FRI
 }
 unit023Check(){
 	local itemName=unit023
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(cat $RMVBL/$itemName-removed*) == "old" ]] || return 3
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat $RMVBL/"$itemName"-removed*) == "old" ]] || return 3
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit024 DESCRIPTION:  ST < RT = HT, UTD, should say fork and do nothing 
 unit024Initialise(){
 	local itemName=unit024
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "also new"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "also new"
 	
-	setSyncTime $itemName $MON
-	setRmvblTime $itemName $FRI
-	setHostTime $itemName $FRI
-	setUTDTrue $itemName
+	setSyncTime "$itemName" $MON
+	setRmvblTime "$itemName" $FRI
+	setHostTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit024Check(){
 	local itemName=unit024
-	[[ $(cat $HOST/$itemName) == "also new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "also new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit025 DESCRIPTION:  ST < RT = HT, NUTD, should say fork and do nothing 
 unit025Initialise(){
 	local itemName=unit025
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "also new"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "also new"
 	
-	setSyncTime $itemName $MON
-	setRmvblTime $itemName $FRI
-	setHostTime $itemName $FRI
+	setSyncTime "$itemName" $MON
+	setRmvblTime "$itemName" $FRI
+	setHostTime "$itemName" $FRI
 }
 unit025Check(){
 	local itemName=unit025
-	[[ $(cat $HOST/$itemName) == "also new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "also new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
@@ -331,127 +331,127 @@ unit025Check(){
 # unit030 DESCRIPTION:  HT < RT < ST, UTD, should say unreachable error and do nothing 
 unit030Initialise(){
 	local itemName=unit030
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "old"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "old"
 	
-	setHostTime $itemName $MON
-	setRmvblTime $itemName $WED
-	setSyncTime $itemName $FRI
-	setUTDTrue $itemName
+	setHostTime "$itemName" $MON
+	setRmvblTime "$itemName" $WED
+	setSyncTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit030Check(){
 	local itemName=unit030
-	[[ $(cat $HOST/$itemName) == "old" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $MON ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "old" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit031 DESCRIPTION:  HT < RT < ST, NUTD, should sync rmvbl>host 
 unit031Initialise(){
 	local itemName=unit031
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "old"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "old"
 	
-	setHostTime $itemName $MON
-	setRmvblTime $itemName $WED
-	setSyncTime $itemName $FRI
+	setHostTime "$itemName" $MON
+	setRmvblTime "$itemName" $WED
+	setSyncTime "$itemName" $FRI
 }
 unit031Check(){
 	local itemName=unit031
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(cat $HOST/$itemName-removed*/*) == "old" ]] || return 3
-	[[ $(getHostTime $itemName) -eq $WED ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat $HOST/"$itemName"-removed*/*) == "old" ]] || return 3
+	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	return 0
 }
 # unit032 DESCRIPTION:  RT < HT < ST, UTD, should say unreachable error and do nothing 
 unit032Initialise(){
 	local itemName=unit032
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "new"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "new"
 	
-	setRmvblTime $itemName $MON
-	setHostTime $itemName $WED
-	setSyncTime $itemName $FRI
-	setUTDTrue $itemName
+	setRmvblTime "$itemName" $MON
+	setHostTime "$itemName" $WED
+	setSyncTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit032Check(){
 	local itemName=unit032
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "old" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $WED ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $MON ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit033 DESCRIPTION:  RT < HT < ST, NUTD, should say error and do nothing 
 unit033Initialise(){
 	local itemName=unit033
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "new"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "new"
 	
-	setRmvblTime $itemName $MON
-	setHostTime $itemName $WED
-	setSyncTime $itemName $FRI
+	setRmvblTime "$itemName" $MON
+	setHostTime "$itemName" $WED
+	setSyncTime "$itemName" $FRI
 }
 unit033Check(){
 	local itemName=unit033
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "old" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $WED ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $MON ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	return 0
 }
 # unit034 DESCRIPTION:  RT = HT < ST, UTD, this is the "no changes" state, should do nothing 
 unit034Initialise(){
 	local itemName=unit034
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "also old"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "also old"
 	
-	setRmvblTime $itemName $MON
-	setHostTime $itemName $MON
-	setSyncTime $itemName $FRI
-	setUTDTrue $itemName
+	setRmvblTime "$itemName" $MON
+	setHostTime "$itemName" $MON
+	setSyncTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit034Check(){
 	local itemName=unit034
-	[[ $(cat $HOST/$itemName) == "also old" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "old" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $MON ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $MON ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	return 0
 }
 # unit035 DESCRIPTION:  RT = HT < ST, NUTD, should say unreachable error and do nothing 
 unit035Initialise(){
 	local itemName=unit035
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "also old"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "also old"
 	
-	setRmvblTime $itemName $MON
-	setHostTime $itemName $MON
-	setSyncTime $itemName $FRI
+	setRmvblTime "$itemName" $MON
+	setHostTime "$itemName" $MON
+	setSyncTime "$itemName" $FRI
 }
 unit035Check(){
 	local itemName=unit035
-	[[ $(cat $HOST/$itemName) == "also old" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "old" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $MON ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $MON ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
@@ -460,215 +460,215 @@ unit035Check(){
 # unit040 DESCRIPTION:  RT < HT = ST, UTD, should say error and do nothing 
 unit040Initialise(){
 	local itemName=unit040
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "also old"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "also old"
 	
-	setRmvblTime $itemName $MON
-	setHostTime $itemName $FRI
-	setSyncTime $itemName $FRI
-	setUTDTrue $itemName
+	setRmvblTime "$itemName" $MON
+	setHostTime "$itemName" $FRI
+	setSyncTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit040Check(){
 	local itemName=unit040
-	[[ $(cat $HOST/$itemName) == "also old" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "old" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $MON ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit041 DESCRIPTION:  RT < HT = ST, NUTD, should say error and do nothing 
 unit041Initialise(){
 	local itemName=unit041
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "also old"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "also old"
 	
-	setRmvblTime $itemName $MON
-	setHostTime $itemName $FRI
-	setSyncTime $itemName $FRI
+	setRmvblTime "$itemName" $MON
+	setHostTime "$itemName" $FRI
+	setSyncTime "$itemName" $FRI
 }
 unit041Check(){
 	local itemName=unit041
-	[[ $(cat $HOST/$itemName) == "also old" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "old" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $MON ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit042 DESCRIPTION:  HT = ST < RT, UTD, should say error and do nothing 
 unit042Initialise(){
 	local itemName=unit042
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "old"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "old"
 	
-	setHostTime $itemName $MON
-	setSyncTime $itemName $MON
-	setRmvblTime $itemName $FRI
-	setUTDTrue $itemName
+	setHostTime "$itemName" $MON
+	setSyncTime "$itemName" $MON
+	setRmvblTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit042Check(){
 	local itemName=unit042
-	[[ $(cat $HOST/$itemName) == "old" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $MON ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "old" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit043 DESCRIPTION:  HT = ST < RT, NUTD, should say error and do nothing 
 unit043Initialise(){
 	local itemName=unit043
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "old"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "old"
 	
-	setHostTime $itemName $MON
-	setSyncTime $itemName $MON
-	setRmvblTime $itemName $FRI
+	setHostTime "$itemName" $MON
+	setSyncTime "$itemName" $MON
+	setRmvblTime "$itemName" $FRI
 }
 unit043Check(){
 	local itemName=unit043
-	[[ $(cat $HOST/$itemName) == "old" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $MON ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "old" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit044 DESCRIPTION:  HT < ST = RT, UTD, should say error and do nothing 
 unit044Initialise(){
 	local itemName=unit044
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "old"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "old"
 	
-	setHostTime $itemName $MON
-	setSyncTime $itemName $FRI
-	setRmvblTime $itemName $FRI
-	setUTDTrue $itemName
+	setHostTime "$itemName" $MON
+	setSyncTime "$itemName" $FRI
+	setRmvblTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit044Check(){
 	local itemName=unit044
-	[[ $(cat $HOST/$itemName) == "old" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $MON ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "old" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit045 DESCRIPTION:  HT < ST = RT, NUTD, should say error and do nothing 
 unit045Initialise(){
 	local itemName=unit045
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "new"
-	writeToHost $itemName "old"
+	writeToRmvbl "$itemName" "new"
+	writeToHost "$itemName" "old"
 	
-	setHostTime $itemName $MON
-	setSyncTime $itemName $FRI
-	setRmvblTime $itemName $FRI
+	setHostTime "$itemName" $MON
+	setSyncTime "$itemName" $FRI
+	setRmvblTime "$itemName" $FRI
 }
 unit045Check(){
 	local itemName=unit045
-	[[ $(cat $HOST/$itemName) == "old" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "new" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $MON ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $FRI ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "old" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit046 DESCRIPTION:  RT = ST < HT, UTD, should say error and do nothing 
 unit046Initialise(){
 	local itemName=unit046
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "new"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "new"
 	
-	setSyncTime $itemName $MON
-	setRmvblTime $itemName $MON
-	setHostTime $itemName $FRI
-	setUTDTrue $itemName
+	setSyncTime "$itemName" $MON
+	setRmvblTime "$itemName" $MON
+	setHostTime "$itemName" $FRI
+	setUTDTrue "$itemName"
 }
 unit046Check(){
 	local itemName=unit046
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "old" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $MON ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit047 DESCRIPTION:  RT = ST < HT, NUTD, should say error and do nothing 
 unit047Initialise(){
 	local itemName=unit047
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "new"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "new"
 	
-	setSyncTime $itemName $MON
-	setRmvblTime $itemName $MON
-	setHostTime $itemName $FRI
+	setSyncTime "$itemName" $MON
+	setRmvblTime "$itemName" $MON
+	setHostTime "$itemName" $FRI
 }
 unit047Check(){
 	local itemName=unit047
-	[[ $(cat $HOST/$itemName) == "new" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "old" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $FRI ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $MON ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit048 DESCRIPTION:  RT = ST = HT, UTD, should say error and do nothing 
 unit048Initialise(){
 	local itemName=unit048
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "also old"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "also old"
 	
-	setSyncTime $itemName $WED
-	setRmvblTime $itemName $WED
-	setHostTime $itemName $WED
-	setUTDTrue $itemName
+	setSyncTime "$itemName" $WED
+	setRmvblTime "$itemName" $WED
+	setHostTime "$itemName" $WED
+	setUTDTrue "$itemName"
 }
 unit048Check(){
 	local itemName=unit048
-	[[ $(cat $HOST/$itemName) == "also old" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "old" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $WED ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit049 DESCRIPTION:  RT = ST = HT, NUTD, should say error and do nothing 
 unit049Initialise(){
 	local itemName=unit049
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 	
-	writeToRmvbl $itemName "old"
-	writeToHost $itemName "also old"
+	writeToRmvbl "$itemName" "old"
+	writeToHost "$itemName" "also old"
 	
-	setSyncTime $itemName $WED
-	setRmvblTime $itemName $WED
-	setHostTime $itemName $WED
+	setSyncTime "$itemName" $WED
+	setRmvblTime "$itemName" $WED
+	setHostTime "$itemName" $WED
 }
 unit049Check(){
 	local itemName=unit049
-	[[ $(cat $HOST/$itemName) == "also old" ]] || return 1
-	[[ $(cat $RMVBL/$itemName) == "old" ]] || return 2
-	[[ $(getHostTime $itemName) -eq $WED ]] || return 4
-	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
+	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
+	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
@@ -679,59 +679,59 @@ unit049Check(){
 # unit050 DESCRIPTION:  NSP, UTD, HE, RE, should say sync status is inconsistent
 unit050Initialise(){
 	local itemName=unit050
-	addToLocsList $itemName
-	writeToRmvbl $itemName "rmvbl content"
-	setRmvblTime $itemName $WED
-	writeToHost $itemName "host content"
-	setHostTime $itemName $TUE
-	setUTDTrue $itemName
+	addToLocsList "$itemName"
+	writeToRmvbl "$itemName" "rmvbl content"
+	setRmvblTime "$itemName" $WED
+	writeToHost "$itemName" "host content"
+	setHostTime "$itemName" $TUE
+	setUTDTrue "$itemName"
 }
 unit050Check(){
 	local itemName=unit050
-	[[ $(cat $RMVBL/$itemName) == "rmvbl content" ]] || return 2
-	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
-	[[ $(cat $HOST/$itemName) == "host content" ]] || return 1
-	[[ $(getHostTime $itemName) -eq $TUE ]] || return 4
+	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGStatusInconsistent"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit051 DESCRIPTION:  NSP, UTD, HE, NRE, should say sync record is missing
 unit051Initialise(){
 	local itemName=unit051
-	addToLocsList $itemName
-	writeToHost $itemName "host content"
-	setHostTime $itemName $TUE
-	setUTDTrue $itemName
+	addToLocsList "$itemName"
+	writeToHost "$itemName" "host content"
+	setHostTime "$itemName" $TUE
+	setUTDTrue "$itemName"
 }
 unit051Check(){
 	local itemName=unit051
-	[[ $(cat $HOST/$itemName) == "host content" ]] || return 1
-	[[ $(getHostTime $itemName) -eq $TUE ]] || return 4
+	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGStatusInconsistent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $RMVBL/$itemName ]] && return 7
+	[[ -e $RMVBL/"$itemName" ]] && return 7
 	return 0
 }
 # unit052 DESCRIPTION:  NSP, UTD, NHE, RE, should say sync record is missing
 unit052Initialise(){
 	local itemName=unit052
-	addToLocsList $itemName
-	writeToRmvbl $itemName "rmvbl content"
-	setRmvblTime $itemName $WED
-	setUTDTrue $itemName
+	addToLocsList "$itemName"
+	writeToRmvbl "$itemName" "rmvbl content"
+	setRmvblTime "$itemName" $WED
+	setUTDTrue "$itemName"
 }
 unit052Check(){
 	local itemName=unit052
-	[[ $(cat $RMVBL/$itemName) == "rmvbl content" ]] || return 2
-	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
+	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGStatusInconsistent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $HOST/$itemName ]] && return 7
+	[[ -e $HOST/"$itemName" ]] && return 7
 	return 0
 }
 # unit053 DESCRIPTION:  NSP, UTD, NHE, NRE, should say sync record is missing
 unit053Initialise(){
 	local itemName=unit053
-	addToLocsList $itemName
-	setUTDTrue $itemName
+	addToLocsList "$itemName"
+	setUTDTrue "$itemName"
 }
 unit053Check(){
 	local itemName=unit053
@@ -743,9 +743,9 @@ unit053Check(){
 # unit060 DESCRIPTION: SP, UTD, NHE, NRE, should say sync record for missing items
 unit060Initialise(){
 	local itemName=unit060
-	addToLocsList $itemName
-	setSyncTime $itemName $THU
-	setUTDTrue $itemName
+	addToLocsList "$itemName"
+	setSyncTime "$itemName" $THU
+	setUTDTrue "$itemName"
 }
 unit060Check(){
 	local itemName=unit060
@@ -755,8 +755,8 @@ unit060Check(){
 # unit061 DESCRIPTION: SP, NUTD, NHE, NRE, should say sync record for missing items
 unit061Initialise(){
 	local itemName=unit061
-	addToLocsList $itemName
-	setSyncTime $itemName $THU
+	addToLocsList "$itemName"
+	setSyncTime "$itemName" $THU
 }
 unit061Check(){
 	local itemName=unit061
@@ -766,7 +766,7 @@ unit061Check(){
 # unit062 DESCRIPTION: NSP, NUTD, NHE, NRE, should say nonexistent items
 unit062Initialise(){
 	local itemName=unit062
-	addToLocsList $itemName
+	addToLocsList "$itemName"
 }
 unit062Check(){
 	local itemName=unit062
@@ -778,49 +778,49 @@ unit062Check(){
 # unit070 DESCRIPTION: SP, UTD, HE, NRE, should say rmvbl is missing
 unit070Initialise(){
 	local itemName=unit070
-	addToLocsList $itemName
-	writeToHost $itemName "host content"
-	setHostTime $itemName $TUE
-	setSyncTime $itemName $THU
-	setUTDTrue $itemName
+	addToLocsList "$itemName"
+	writeToHost "$itemName" "host content"
+	setHostTime "$itemName" $TUE
+	setSyncTime "$itemName" $THU
+	setUTDTrue "$itemName"
 }
 unit070Check(){
 	local itemName=unit070
-	[[ $(cat $HOST/$itemName) == "host content" ]] || return 1
-	[[ $(getHostTime $itemName) -eq $TUE ]] || return 4
+	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGSyncedButRmvblAbsent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $RMVBL/$itemName ]] && return 7
+	[[ -e $RMVBL/"$itemName" ]] && return 7
 	return 0
 }
 # unit071 DESCRIPTION: SP, NUTD, HE, NRE, should say rmvbl is missing
 unit071Initialise(){
 	local itemName=unit071
-	addToLocsList $itemName
-	writeToHost $itemName "host content"
-	setHostTime $itemName $TUE
-	setSyncTime $itemName $THU
+	addToLocsList "$itemName"
+	writeToHost "$itemName" "host content"
+	setHostTime "$itemName" $TUE
+	setSyncTime "$itemName" $THU
 }
 unit071Check(){
 	local itemName=unit071
-	[[ $(cat $HOST/$itemName) == "host content" ]] || return 1
-	[[ $(getHostTime $itemName) -eq $TUE ]] || return 4
+	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGSyncedButRmvblAbsent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $RMVBL/$itemName ]] && return 7
+	[[ -e $RMVBL/"$itemName" ]] && return 7
 	return 0
 }
 # unit072 DESCRIPTION: NSP, NUTD, HE, NRE, should sync host>rmvbl
 unit072Initialise(){
 	local itemName=unit072
-	addToLocsList $itemName
-	writeToHost $itemName "host content"
-	setHostTime $itemName $TUE
+	addToLocsList "$itemName"
+	writeToHost "$itemName" "host content"
+	setHostTime "$itemName" $TUE
 }
 unit072Check(){
 	local itemName=unit072
-	[[ $(cat $HOST/$itemName) == "host content" ]] || return 1
-	[[ $(getHostTime $itemName) -eq $TUE ]] || return 4
-	[[ $(cat $RMVBL/$itemName) == "host content" ]] || return 2
-	[[ $(getRmvblTime $itemName) -eq $TUE ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
+	[[ $(cat $RMVBL/"$itemName") == "host content" ]] || return 2
+	[[ $(getRmvblTime "$itemName") -eq $TUE ]] || return 5
 	grep "$itemName: first time syncing from host to removable drive"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
@@ -829,49 +829,49 @@ unit072Check(){
 # unit080 DESCRIPTION: SP, UTD, NHE, RE, should say host is missing
 unit080Initialise(){
 	local itemName=unit080
-	addToLocsList $itemName
-	writeToRmvbl $itemName "rmvbl content"
-	setRmvblTime $itemName $WED
-	setSyncTime $itemName $THU
-	setUTDTrue $itemName
+	addToLocsList "$itemName"
+	writeToRmvbl "$itemName" "rmvbl content"
+	setRmvblTime "$itemName" $WED
+	setSyncTime "$itemName" $THU
+	setUTDTrue "$itemName"
 }
 unit080Check(){
 	local itemName=unit080
-	[[ $(cat $RMVBL/$itemName) == "rmvbl content" ]] || return 2
-	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
+	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGSyncedButHostAbsent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $HOST/$itemName ]] && return 7
+	[[ -e $HOST/"$itemName" ]] && return 7
 	return 0
 }
 # unit081 DESCRIPTION: SP, NUTD, NHE, RE, should say host is missing
 unit081Initialise(){
 	local itemName=unit081
-	addToLocsList $itemName
-	writeToRmvbl $itemName "rmvbl content"
-	setRmvblTime $itemName $WED
-	setSyncTime $itemName $THU
+	addToLocsList "$itemName"
+	writeToRmvbl "$itemName" "rmvbl content"
+	setRmvblTime "$itemName" $WED
+	setSyncTime "$itemName" $THU
 }
 unit081Check(){
 	local itemName=unit081
-	[[ $(cat $RMVBL/$itemName) == "rmvbl content" ]] || return 2
-	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
+	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGSyncedButHostAbsent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $HOST/$itemName ]] && return 7
+	[[ -e $HOST/"$itemName" ]] && return 7
 	return 0
 }
 # unit082 DESCRIPTION: NSP, NUTD, NHE, RE, should sync rmvbl>host
 unit082Initialise(){
 	local itemName=unit082
-	addToLocsList $itemName
-	writeToRmvbl $itemName "rmvbl content"
-	setRmvblTime $itemName $WED
+	addToLocsList "$itemName"
+	writeToRmvbl "$itemName" "rmvbl content"
+	setRmvblTime "$itemName" $WED
 }
 unit082Check(){
 	local itemName=unit082
-	[[ $(cat $HOST/$itemName) == "rmvbl content" ]] || return 1
-	[[ $(getHostTime $itemName) -eq $WED ]] || return 4
-	[[ $(cat $RMVBL/$itemName) == "rmvbl content" ]] || return 2
-	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "rmvbl content" ]] || return 1
+	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
+	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: first time syncing from removable drive to host"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
@@ -880,56 +880,56 @@ unit082Check(){
 # unit090 DESCRIPTION: NSP, NUTD, HE, RE, HT < RT, should say sync record is missing, merge rmvbl>host
 unit090Initialise(){
 	local itemName=unit090
-	addToLocsList $itemName
-	writeToRmvbl $itemName "rmvbl content"
-	setRmvblTime $itemName $WED
-	writeToHost $itemName "host content"
-	setHostTime $itemName $TUE
+	addToLocsList "$itemName"
+	writeToRmvbl "$itemName" "rmvbl content"
+	setRmvblTime "$itemName" $WED
+	writeToHost "$itemName" "host content"
+	setHostTime "$itemName" $TUE
 }
 unit090Check(){
 	local itemName=unit090
-	[[ $(cat $HOST/$itemName) == "rmvbl content" ]] || return 1
-	[[ $(getHostTime $itemName) -eq $WED ]] || return 4
-	[[ $(cat $HOST/$itemName-removed*) == "host content" ]] || return 3
-	[[ $(cat $RMVBL/$itemName) == "rmvbl content" ]] || return 2
-	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "rmvbl content" ]] || return 1
+	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
+	[[ $(cat $HOST/"$itemName"-removed*) == "host content" ]] || return 3
+	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit091 DESCRIPTION: NSP, NUTD, HE, RE, RT < HT, should say sync record is missing, merge host>rmvbl
 unit091Initialise(){
 	local itemName=unit091
-	addToLocsList $itemName
-	writeToRmvbl $itemName "rmvbl content"
-	setRmvblTime $itemName $TUE
-	writeToHost $itemName "host content"
-	setHostTime $itemName $WED
+	addToLocsList "$itemName"
+	writeToRmvbl "$itemName" "rmvbl content"
+	setRmvblTime "$itemName" $TUE
+	writeToHost "$itemName" "host content"
+	setHostTime "$itemName" $WED
 }
 unit091Check(){
 	local itemName=unit091
-	[[ $(cat $HOST/$itemName) == "host content" ]] || return 1
-	[[ $(getHostTime $itemName) -eq $WED ]] || return 4
-	[[ $(cat $RMVBL/$itemName-removed*) == "rmvbl content" ]] || return 3
-	[[ $(cat $RMVBL/$itemName) == "host content" ]] || return 2
-	[[ $(getRmvblTime $itemName) -eq $WED ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
+	[[ $(cat $RMVBL/"$itemName"-removed*) == "rmvbl content" ]] || return 3
+	[[ $(cat $RMVBL/"$itemName") == "host content" ]] || return 2
+	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
 # unit092 DESCRIPTION: NSP, NUTD, HE, RE, HT = RT, should say sync record is missing, do no merge
 unit092Initialise(){
 	local itemName=unit092
-	addToLocsList $itemName
-	writeToRmvbl $itemName "rmvbl content"
-	setRmvblTime $itemName $TUE
-	writeToHost $itemName "host content"
-	setHostTime $itemName $TUE
+	addToLocsList "$itemName"
+	writeToRmvbl "$itemName" "rmvbl content"
+	setRmvblTime "$itemName" $TUE
+	writeToHost "$itemName" "host content"
+	setHostTime "$itemName" $TUE
 }
 unit092Check(){
 	local itemName=unit092
-	[[ $(cat $HOST/$itemName) == "host content" ]] || return 1
-	[[ $(getHostTime $itemName) -eq $TUE ]] || return 4
-	[[ $(cat $RMVBL/$itemName) == "rmvbl content" ]] || return 2
-	[[ $(getRmvblTime $itemName) -eq $TUE ]] || return 5
+	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
+	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(getRmvblTime "$itemName") -eq $TUE ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
 }
