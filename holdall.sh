@@ -98,7 +98,8 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # when drive-modified-directly is recognised, make the up-to-date hosts list reflect it.
 # make automatic mode require "number of backups to keep" setting be at least 1
 # change pretend structure of writeToStatus
-# make deleteItem make mv to backup instead of simply rm
+# check if it'll work and move most of "synchronise()" into "syncSourceToDest()", and have main call syncSourceToDest directly.
+#     this should make it easier to give main fine control over writeToStatus re. reflecting DMD etc.
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
