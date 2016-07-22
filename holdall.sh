@@ -796,8 +796,8 @@ synchronise(){ # caller should have ALREADY obtained permission with getPermissi
 			syncSourceToDest "$itemHostLoc" "$itemRmvblLoc"
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $syncDirection; fi
-			echoToLog "$itemName, host copied to removable drive"
-			echoToLog "$itemname, $itemHostLoc, copied to, $itemRmvblLoc, copy exit status=$copyExitVal"
+			echoToLog "$itemName, host synced to removable drive"
+			echoToLog "$itemName, $itemHostLoc, synced to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			if [[ $copyExitVal -eq 0 ]]; then removeOldBackups "$itemRmvblLoc"; fi
 			
 			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvblError$copyExitVal"; fi
@@ -807,8 +807,8 @@ synchronise(){ # caller should have ALREADY obtained permission with getPermissi
 			syncSourceToDest "$itemRmvblLoc" "$itemHostLoc"
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $syncDirection; fi
-			echoToLog "$itemName, removable drive copied to host"
-			echoToLog "$itemname, $itemRmvblLoc, copied to, $itemHostLoc, copy exit status=$copyExitVal" 
+			echoToLog "$itemName, removable drive synced to host"
+			echoToLog "$itemName, $itemRmvblLoc, synced to, $itemHostLoc, copy exit status=$copyExitVal" 
 			if [[ $copyExitVal -eq 0 ]]; then removeOldBackups "$itemHostLoc"; fi
 			
 			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHost"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHostError$copyExitVal"; fi
@@ -973,7 +973,7 @@ merge(){
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
 			echoToLog "$itemName, host merged to removable drive"
-			echoToLog "$itemname, $itemHostLoc, merged to, $itemRmvblLoc, copy exit status=$copyExitVal"
+			echoToLog "$itemName, $itemHostLoc, merged to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			
 			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvblError$copyExitVal"; fi
 			;;
@@ -983,7 +983,7 @@ merge(){
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
 			echoToLog "$itemName, removable drive merged to host"
-			echoToLog "$itemname, $itemRmvblLoc, merged to, $itemHostLoc, copy exit status=$copyExitVal"
+			echoToLog "$itemName, $itemRmvblLoc, merged to, $itemHostLoc, copy exit status=$copyExitVal"
 			
 			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHost"; else appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHostError$copyExitVal"; fi
 			;;
