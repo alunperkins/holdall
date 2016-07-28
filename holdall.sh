@@ -94,6 +94,7 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # consider redirect input using units, instead of getting all user input from /dev/tty, so that person running program can still choose to send it input from somewhere else should they want to, like any other program
 # in fact, generally review the programs use of stdout and stderr !
 # make merges write a timestamp to destination that is ten seconds after the copy time (i.e. ten seconds in the future), so that a merge is correctly recognised as a modification
+# and merges should NOT stamp the "last sync date" to be now, since we have not synchronised! - this should be combined with writing a timestamp to the destination that is NOW, not ten seconds in the future.
 # make merges write to the up-to-date hosts list in an appropriate way - only the merge target is now up-to-date!
 # when drive-modified-directly is recognised, make the up-to-date hosts list reflect it.
 # make automatic mode require "number of backups to keep" setting be at least 1
