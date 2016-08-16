@@ -1317,8 +1317,8 @@ main(){
 			itemHostModTime=$(modTimeOf "$itemHostLoc")
 			getVerbose && echo from disk: mod time of version on host: $(readableDate $itemHostModTime)
 			getVerbose && echo from disk: mod time of version on removable drive: $(readableDate $itemRmvblModTime)
-			echoToLog "$itemName, host  mode time, $(readableDate $itemHostModTime)"
-			echoToLog "$itemName, rmvbl mode time, $(readableDate $itemRmvblModTime)"
+			echoToLog "$itemName, host  mod time, $(readableDate $itemHostModTime)"
+			echoToLog "$itemName, rmvbl mod time, $(readableDate $itemRmvblModTime)"
 			
 			if [[ $itemSyncedPreviously -ne true ]]
 			then
