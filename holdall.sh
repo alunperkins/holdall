@@ -178,36 +178,35 @@ modTimeOf(){
 	
 	local queriedItem="$1"
 	if [[ ! -e "$queriedItem" ]]; then echo "modTimeOf called on nonexistent file/folder $queriedItem - hard-coded mistake exists"; exit 103; fi
+	
+	# on UBUNTU 16.04 there is a BUG with du, so this function has been modified to work around it!
+	# du --time --time-style=+%s has a BUG that cause it to return values wrong by one hour.
+	# du --time --time-style=+%c seems to work correctly, however.
+	# so must use du for human-readable time and then date to convert to seconds-since epoch
+	
+	# the following command is:
+        # du time \
+        # | last line of that, meaning overall mod time
+        # | grep that line for a date in the %c format, assuming year is between 1900 and 2099
+        duRecursiveModTime="$(\
+        du --time --time-style=+%c "$queriedItem" \
+        | tail -n 1 \
+        | grep -o '[MTWTFS][a-z][a-z] [0-9][0-9] [JFMASOND][a-z][a-z] [12][90][0-9][0-9] [0-9:]* [A-Z][A-Z][A-Z]' \
+        )"
+        # convert to seconds-since-epoch using date
+        echo $(date --date="$duRecursiveModTime" +%s)
+        return 0
+	
+	# the following is DEPRECATED due to the BUG that exists for du in UBUNTU 16.04
 	# next command and its regex mean: 
 	# 1. recursively get last mod time of file/folder system - output format is [a list of entries] <size in bytes> <mod time> <file/folder name>
 	# 2. use sed to remove the <size in bytes> from the start
 	# 3. use grep to get the mod time
 	# 4. sort and take the last number = the greatest number = the most recent mod time of those listed
-	echo "$(du --time --time-style=+%s "$queriedItem" | tail -n 1 | sed 's/^[0-9]*\s*//' | grep -o '^[0-9]*')"
-	return 0
+	## echo "$(du --time --time-style=+%s "$queriedItem" | tail -n 1 | sed 's/^[0-9]*\s*//' | grep -o '^[0-9]*')"
+	## return 0
 	
-	#local itemModTime=""
-	#local fileModTime=""
-	#local subdirModTime=""
-	
-	#if [[ ! -e "$queriedItem" ]]; then echo "modTimeOf called on nonexistent file/folder $queriedItem - hard-coded mistake exists"; exit 103; fi
-	
-	#if [[ -d "$queriedItem" ]] # if it is a directory
-	#then
-	#	fileModTime=$(find "$queriedItem" -type f -exec date -r \{\} +%s \; | sort -n | tail -1) # = most recent mod time among the files (if no files present returns empty string)
-	#	subdirModTime=$(find "$queriedItem" -type d -exec date -r \{\} +%s \; | sort -n | tail -1) # = most recent mod time among the dirs (including $queriedItem itself)
-	#	# subdirModTime includes the top dir itself; it cannot be blank. 
-	#	if [[ -z $fileModTime ]] # if there were no files (i.e. only (sub)directories)
-	#	then
-	#		itemModTime=$subdirModTime
-	#	else
-	#		if [[ $fileModTime -gt $subdirModTime ]]; then itemModTime=$fileModTime; else itemModTime=$subdirModTime; fi # choose the newer of the mod times
-	#	fi
-	#else # if it is a file
-	#	itemModTime=$(date -r "$queriedItem" +%s)
-	#fi
-	
-	#echo $itemModTime
+
 }
 
 showHelp(){
