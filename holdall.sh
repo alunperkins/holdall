@@ -138,7 +138,6 @@ getDebug(){
 echoToLog(){ # echo $1 to log with a timestamp and hostname
 	getPretend || echo "$(date +%F,%R), $HOSTNAME, $1" >> "$LOGFILE" # the log file on the rmvbl drive, which will contain info concerning all hosts
 	getPretend || echo "$(date +%F,%R), $HOSTNAME, $1" >> "$HOSTLOGFILE" # the log file on the host, which will contain info concerning this host only
-	echo echoed stuff to host log file $HOSTLOGFILE
 }
 echoTitle(){ # echo $1 with a line of dashes
 	local title=$1
