@@ -5,6 +5,9 @@ readonly PROGNAME=$(basename $0)
 readonly PROGDIR=$(readlink -m $(dirname $0))
 readonly DEFAULTNOOFBACKUPSTOKEEP=2
 
+readonly HOSTLOGFILE="$HOME"/"$PROGNAME"_Log # /var/log/holdall # one doesn't always have write access to /var/log?
+readonly LOGFILEMAXLENGTH=5000
+
 # letters for user to type to make menu selections - so make them easy and intuitive
 readonly YES=y
 readonly CANCEL=n
@@ -133,7 +136,9 @@ getDebug(){
 }
 
 echoToLog(){ # echo $1 to log with a timestamp and hostname
-	getPretend || echo "$(date +%F,%R), $HOSTNAME, $1" >> $LOGFILE
+	getPretend || echo "$(date +%F,%R), $HOSTNAME, $1" >> "$LOGFILE" # the log file on the rmvbl drive, which will contain info concerning all hosts
+	getPretend || echo "$(date +%F,%R), $HOSTNAME, $1" >> "$HOSTLOGFILE" # the log file on the host, which will contain info concerning this host only
+	echo echoed stuff to host log file $HOSTLOGFILE
 }
 echoTitle(){ # echo $1 with a line of dashes
 	local title=$1
@@ -1471,10 +1476,12 @@ main(){
 	done < <(cleanCommentsAndWhitespace $LOCSLIST) # end of while loop over items
 	
 	# trim log file to a reasonable length
-	tail -n 5000 "$LOGFILE" > "$LOGFILE.tmp" 2> /dev/null && mv "$LOGFILE.tmp" "$LOGFILE"
+	tail -n $LOGFILEMAXLENGTH "$LOGFILE" > "$LOGFILE.tmp" 2> /dev/null && mv "$LOGFILE.tmp" "$LOGFILE"
+	tail -n $LOGFILEMAXLENGTH "$HOSTLOGFILE" > "$HOSTLOGFILE.tmp" 2> /dev/null && mv "$HOSTLOGFILE.tmp" "$HOSTLOGFILE"
 	
 	echoTitle " SUMMARY "
 	echo -e "$summary" | column -t -s " "
+	echo " ($(date))"
 		
 	
 	getVerbose && echoTitle " end of script "
