@@ -105,6 +105,7 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # check if it'll work and move most of "synchronise()" into "syncSourceToDest()", and have main call syncSourceToDest directly.
 #     this should make it easier to give main fine control over writeToStatus re. reflecting DMD etc.
 # analyseLocsList does a check for two items being subfolders of each other. This is just comparing the strings though. It gives a false positive for subfolders if you sync e.g. $HOME/work and $HOME/work-other. Fix this.
+# the way ADDEDLOCATION is used means that only one new location can be added at a time
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
