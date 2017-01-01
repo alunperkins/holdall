@@ -947,7 +947,7 @@ writeToStatusFileUPTODATEHOSTSappendThisHost(){
 	local itemName="$1"
 	statusFileEnsureExistenceOfHostLine "$itemName"
 	grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" "$SYNCSTATUSFILE" && local alreadyOnUpToDateHostsList=$TRUE || local alreadyOnUpToDateHostsList=$FALSE
-	[[ alreadyOnUpToDateHostsList == $FALSE ]] && (getPretend || sed -i "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" "$SYNCSTATUSFILE") # WATCH OUT for hard/soft quoting in sed here!
+	[[ $alreadyOnUpToDateHostsList == $FALSE ]] && (getPretend || sed -i "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" "$SYNCSTATUSFILE") # WATCH OUT for hard/soft quoting in sed here!
 	return 0
 }
 writeToStatusFileLASTSYNCDATEnow(){
