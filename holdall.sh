@@ -894,37 +894,23 @@ removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not w
 	return 0
 }
 writeToStatus(){
-	getPretend && return 0; # in pretend mode simply skip this entire function # TODO change this to using "getPretend || command" within the function
 	local itemName="$1"
 	local syncDirection="$2"
-	
-	#  - make sure a date line exists 
-	grep -q "^$itemName $HOSTNAME LASTSYNCDATE .*" "$SYNCSTATUSFILE" && local dateLineExists=$TRUE || local dateLineExists=$FALSE
-	if [[ $dateLineExists == $FALSE ]]; then echo "$itemName $HOSTNAME LASTSYNCDATE x">>"$SYNCSTATUSFILE"; fi
-	#  - make sure a hosts line exists 
-	grep -q "^$itemName UPTODATEHOSTS.*$" "$SYNCSTATUSFILE" && local hostsLineExists=$TRUE || local hostsLineExists=$TRUE
-	if [[ $hostsLineExists == $FALSE ]]; then echo "$itemName UPTODATEHOSTS">>"$SYNCSTATUSFILE"; fi
-	
+		
 	# edit the date line to set date of last sync to current time 
-	sed "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $(date +%s)/" <"$SYNCSTATUSFILE" >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
+	writeToStatusFileLASTSYNCDATEnow "$itemName"
 	
 	# update the hosts line
 	# this should be made into a CASE statement
 	if [[ $syncDirection == $DIRECTIONHOSTTORMVBL ]]
 	then
 		# then removable drive just accepted a change from this host, delete all other hosts from up-to-date list
-		sed "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS $HOSTNAME,/" <"$SYNCSTATUSFILE" >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
+		writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
 	else
 		if [[ $syncDirection == $DIRECTIONRMVBLTOHOST ]]
 		then
 			# then this host just accepted a change from removable drive, it should be on the up-to-date hosts list
-			# if it's not already on the list...
-			grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" "$SYNCSTATUSFILE" && local alreadyOnUpToDateHostsList=$TRUE || local alreadyOnUpToDateHostsList=$FALSE
-			if [[ alreadyOnUpToDateHostsList == $FALSE ]]
-			then
-				# ... then append it to up-to-date hosts list
-				sed "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" <"$SYNCSTATUSFILE" >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
-			fi
+			writeToStatusFileUPTODATEHOSTSappendThisHost "$itemName"
 		else
 			echo "writeToStatus was passed invalid argument $syncDirection, there is a hard-coded fault"
 			exit 102
@@ -936,41 +922,39 @@ writeToStatus(){
 statusFileEnsureExistenceOfDateLine(){
 	local itemName="$1"
 	grep -q "^$itemName $HOSTNAME LASTSYNCDATE .*" "$SYNCSTATUSFILE" && local dateLineExists=$TRUE || local dateLineExists=$FALSE
-	[[ $dateLineExists == $FALSE ]] && echo "$itemName $HOSTNAME LASTSYNCDATE XXX">>"$SYNCSTATUSFILE"
+	[[ $dateLineExists == $FALSE ]] && (getPretend || echo "$itemName $HOSTNAME LASTSYNCDATE XXX">>"$SYNCSTATUSFILE")
 	return 0
 }
 statusFileEnsureExistenceOfHostLine(){
 	local itemName="$1"
 	grep -q "^$itemName UPTODATEHOSTS.*$" "$SYNCSTATUSFILE" && local hostsLineExists=$TRUE || local hostsLineExists=$FALSE
-	[[ $hostsLineExists == $FALSE ]] && echo "$itemName UPTODATEHOSTS">>"$SYNCSTATUSFILE"
+	[[ $hostsLineExists == $FALSE ]] && (getPretend || echo "$itemName UPTODATEHOSTS">>"$SYNCSTATUSFILE")
 	return 0
 }
 writeToStatusFileUPTODATEHOSTSassignEmpty(){
 	local itemName="$1"
-	statusFileEnsureExistenceOfHostLine $itemName
-	sed -i "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS/" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
+	statusFileEnsureExistenceOfHostLine "$itemName"
+	getPretend || sed -i "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS/" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	return 0
 }
 writeToStatusFileUPTODATEHOSTSassignThisHost(){
 	local itemName="$1"
-	statusFileEnsureExistenceOfHostLine $itemName
-	sed -i "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS $HOSTNAME,/" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
+	statusFileEnsureExistenceOfHostLine "$itemName"
+	getPretend || sed -i "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS $HOSTNAME,/" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	return 0
 }
 writeToStatusFileUPTODATEHOSTSappendThisHost(){
 	local itemName="$1"
-	statusFileEnsureExistenceOfHostLine $itemName
+	statusFileEnsureExistenceOfHostLine "$itemName"
 	grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" "$SYNCSTATUSFILE" && local alreadyOnUpToDateHostsList=$TRUE || local alreadyOnUpToDateHostsList=$FALSE
-	[[ alreadyOnUpToDateHostsList == $FALSE ]] && sed -i "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
+	[[ alreadyOnUpToDateHostsList == $FALSE ]] && (getPretend || sed -i "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" "$SYNCSTATUSFILE") # WATCH OUT for hard/soft quoting in sed here!
 	return 0
 }
-writeToStatusFileLASTSYNCDATEnowPlusOffset(){
+writeToStatusFileLASTSYNCDATEnow(){
 	local itemName="$1"
-	local offset="$2"
-	statusFileEnsureExistenceOfDateLine $itemName
-	# edit the date line to set date of last sync to current time + offset
-	local timeStampToSet=$(( $(date +%s) + $offset ))
-	sed -i "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $timeStampToSet/" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
+	statusFileEnsureExistenceOfDateLine "$itemName"
+	local timeStampToSet=$(( $(date +%s) )) # i.e. the current time
+	getPretend ||sed -i "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $timeStampToSet/" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	return 0
 }
 
