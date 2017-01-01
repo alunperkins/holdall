@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# the "unofficial bash strict mode" convention, recommended by Aaron Maxwell http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -e
+set -u
+set -o pipefail
+
+readonly TRUE=TRUE # can be any unique string
+readonly FALSE=FALSE # can be any unique string
+
 #readonly ARGS=$@
 readonly PROGNAME=$(basename $0)
 readonly PROGDIR=$(readlink -m $(dirname $0))
@@ -31,7 +39,7 @@ readonly ERRORMESSAGENoRsync="error: rsync is not installed on the system. This 
 readonly ERRORMESSAGENoOfArgs="error: wrong number of arguments provided - use $PROGNAME -h for help. "
 readonly ERRORMESSAGEUnreadableLocsList="error: errorPermissionsLocsList: couldn't read the locations-list file."
 readonly ERRORMESSAGEUnwritableLocsList="error: errorPermissionsLocsList: couldn't write to the locations-list file."
-readonly ERRORMESSAGENonexistentRmvbl="error: errorPermissionsRmvbl: removable drive directory $RMVBLDIR nonexistent. "
+readonly ERRORMESSAGENonexistentRmvbl="error: errorPermissionsRmvbl: removable drive directory nonexistent. "
 readonly ERRORMESSAGEUnreadableRmvbl="error: errorPermissionsRmvbl: removable drive directory unreadable. "
 readonly ERRORMESSAGEUnwritableRmvbl="error: errorPermissionsRmvbl: removable drive directory unwritable. "
 readonly ERRORMESSAGEPermissionsSyncStatusFile="error: errorPermissionsSyncStatusFile: could not read/write syncStatusFile. "
@@ -87,7 +95,6 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # implement checking if an itemHostLoc is a subfolder of itemRmvblLoc, or vice-versa
 # need to review behaviour re. sync vs. merge conflicted files (as opposed to folders) - may not be behaving in a transparent way
 # add a status mode where it prints the sync status of every item on the removable drive re. hosts, etc.
-# merges create a mod time that is the same as the sync time - this may be confusing - write something that deals with it
 # currently the handling of the case when the pivotal "rsync" command fails (in functions "synchronise" OR "merge") is fairly okay but is pretty unclear to someone reading the code IMO. Needs refactoring!
 # add to scanLocsList a check for items on the rmvbl that are not synced with any hosts, offer to delete them
 # change the -s option's function to READLINK of the "loc|alias" or "loc" text given, because it's convenient to type a relative path, but the path entered should be an absolute path
@@ -96,6 +103,7 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # move these lines INSIDE chooseVersionDialog : echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
 # consider redirect input using units, instead of getting all user input from /dev/tty, so that person running program can still choose to send it input from somewhere else should they want to, like any other program
 # in fact, generally review the programs use of stdout and stderr !
+# merges create a mod time that is the same as the sync time - this may be confusing - write something that deals with it
 # make merges write a timestamp to destination that is ten seconds after the copy time (i.e. ten seconds in the future), so that a merge is correctly recognised as a modification
 # and merges should NOT stamp the "last sync date" to be now, since we have not synchronised! - this should be combined with writing a timestamp to the destination that is NOW, not ten seconds in the future.
 # make merges write to the up-to-date hosts list in an appropriate way - only the merge target is now up-to-date!
@@ -131,6 +139,7 @@ getPermission(){
 	fi
 }
 DEBUG="off"
+# DEBUG="on"
 getDebug(){
 	if [[ $DEBUG == "on" ]]; then return 0; else return 1; fi 
 }
@@ -138,19 +147,23 @@ getDebug(){
 echoToLog(){ # echo $1 to log with a timestamp and hostname
 	getPretend || echo "$(date +%F,%R), $HOSTNAME, $1" >> "$LOGFILE" # the log file on the rmvbl drive, which will contain info concerning all hosts
 	getPretend || echo "$(date +%F,%R), $HOSTNAME, $1" >> "$HOSTLOGFILE" # the log file on the host, which will contain info concerning this host only
+	return 0
 }
 echoTitle(){ # echo $1 with a line of dashes
 	local title=$1
 	echo -n "----"
 	printf "%s%s \n" "$title" ${LOTSOFDASHES:0:(($(tput cols)-${#title}-20))}
 	# (where tput cols is the width of the current terminal, ${#title} is the length of the title, and leave a gap of 20 chars at the right side of the title)
+	return 0
 }
 readableDate(){ # convert seconds-since-epoch to human-readable
 	local dateInSecondSinceEpoch=$1
 	echo $(date --date=@$dateInSecondSinceEpoch +%c)
+	return 0
 }
 appendLineToSummary(){
 	summary="$summary\n$1"
+	return 0
 }
 diffItems(){ # return diff $1 $2
 	local itemHostLoc="$1"
@@ -163,11 +176,13 @@ diffItems(){ # return diff $1 $2
 		itemVersionsDifference=$(diff "$itemHostLoc" "$itemRmvblLoc")
 	fi
 	echo "$itemVersionsDifference"
+	return 0
 }
 generateBackupName(){
 	local destLoc="$1"
 	local backupName=$(dirname "$destLoc")/$(basename "$destLoc")-removed-$(date +%F-%H%M)~
 	echo "$backupName"
+	return 0
 }
 noRsync(){ # deal with lack of rsync - NOT TESTED =P
 	echo $ERRORMESSAGENoRsync
@@ -262,10 +277,12 @@ showHelp(){
 	   /home/quentin/documents/work|schoolWork
 	it would read this line and sync "/home/quentin/documents/work" with "/media/USBStick/schoolWork"
 	_EOF_
+	return 0
 }
 usage(){
 	echo "Usage: $PROGNAME [OPTIONS: h,p,v,a,i,l,s,f,b] syncTargetFolder"
 	echo use $PROGNAME -h to see full help text
+	return 0
 }
 
 cleanCommentsAndWhitespace(){
@@ -280,6 +297,7 @@ cleanCommentsAndWhitespace(){
 		| sed 's/[[:space:]]*$//' \
 	)"
 	echo "$outputFile"
+	return 0
 }
 addLocationToLocsList(){
 	local locationToAdd="$1"
@@ -439,6 +457,7 @@ createLocsListTemplateDialog(){
 	else
 		echo "not generating a file"
 	fi
+	return 0
 }
 createLocsListTemplate(){
 	getPretend && return 0
@@ -467,6 +486,7 @@ createLocsListTemplate(){
 	# /home/mike/work/stupidReport.pdf|importantReading.pdf 
 	# ---(end of examples)---
 	_EOF_
+	return 0
 }
 noSyncStatusFileDialog(){
 	echo "could not find sync data file $SYNCSTATUSFILE."
@@ -488,6 +508,7 @@ noSyncStatusFileDialog(){
 	else
 		echo "not generating a file"
 	fi
+	return 0
 }
 xdgOpenLocsListDialogAndExit(){
 	local input=""
@@ -535,6 +556,7 @@ eraseItemFromStatusFile(){
 	sed -e "s/^$itemName $HOSTNAME LASTSYNCDATE .*//" -e "s/\(^$itemName UPTODATEHOSTS.*\) $HOSTNAME,\(.*\)/\1\2/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	grep -v '^\s*$' <"$SYNCSTATUSFILE" | sort >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE"
 	echoToLog "$itemName, erased from sync data file"
+	return 0
 }
 chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemRmvblLoc 5)itemRmvblModTime 6)itemSyncTime
 	local itemName="$1"
@@ -614,62 +636,9 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 				;;
 		esac
 	fi # endif [ automatic mode ]
+	return 0
 }
-unexpectedAbsenceDialog(){
-	# DEPRECATED
-	local itemName="$1"
-	local itemHostLoc="$2"
-	local itemRmvblLoc="$3"
-	local absentItem=$4
-	
-	case $absentItem in
-		"host")
-			echo "Host item $itemHostLoc expected but does not exist"
-			local absenceMessage="sync $itemRmvblLoc on removable drive onto $itemHostLoc"
-			;;
-		"removable")
-			echo "Removable drive item $itemRmvblLoc expected but does not exist"
-			local absenceMessage="sync $itemHostLoc on host onto $itemRmvblLoc"
-			;;
-		*)
-			echo "unexpectedAbsenceDialog: invalid arg no.6 - hard-coded error exists"
-			exit 100
-			return 1
-			;;
-	esac
-	
-	if [[ $AUTOMATIC == "on" ]]
-	then
-		echo -n "Automatic mode on > "
-		echo will $absenceMessage
-		local input=$OVRDSYNC
-	else
-		# the dialog
-		echo "   $NOOVRD to take no action this time (re-run to see this dialog again) "
-		echo "   $OVRDSYNC to $absenceMessage"
-		echo "   $OVRDERASERECORD to erase the status for this item (though erasing the status may not solve the problem - be careful)"
-		local input=""
-		read -p '   > ' input </dev/tty
-	fi
-	
-	# taking action
-	case $input in
-		$OVRDSYNC)
-			if [[ $absentItem == "removable" ]]
-			then
-				getPermission "want to sync host >>> to >>> removable" && synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
-			else # then can assume $absentItem == "host"
-				getPermission "want to sync removable >>> to >>> host" && synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
-			fi
-			;;
-		$OVRDERASERECORD)
-			eraseItemFromStatusFile "$itemName"
-			;;
-		*)
-			echo "$itemName: taking no action"
-			;;
-	esac
-}
+
 hostMissingDialog(){
 	local itemName="$1"
 	local itemRmvblLoc="$2"
@@ -711,6 +680,7 @@ hostMissingDialog(){
 			echo "$itemName: taking no action"
 			;;
 	esac 
+	return 0
 }
 rmvblMissingDialog(){
 	local itemName="$1"
@@ -753,6 +723,7 @@ rmvblMissingDialog(){
 			echo "$itemName: taking no action"
 			;;
 	esac 
+	return 0
 }
 deleteLocationFromLocsListDialog(){
 	local itemName="$1"
@@ -780,6 +751,7 @@ deleteLocationFromLocsListDialog(){
 			echo "$itemName: taking no action"
 			;;
 	esac 
+	return 0
 }
 
 synchronise(){ # caller should have ALREADY obtained permission with getPermission or user input, but the pretend mode check getPretend is handled in syncSourceToDest
@@ -802,6 +774,7 @@ synchronise(){ # caller should have ALREADY obtained permission with getPermissi
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $syncDirection; fi
 			echoToLog "$itemName, host synced to removable drive"
 			echoToLog "$itemName, $itemHostLoc, synced to, $itemRmvblLoc, copy exit status=$copyExitVal"
+			echo "DEBUG echoToLog exited with " $?
 			if [[ $copyExitVal -eq 0 ]]; then removeOldBackups "$itemRmvblLoc"; fi
 			
 			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvblError$copyExitVal"; fi
@@ -823,6 +796,7 @@ synchronise(){ # caller should have ALREADY obtained permission with getPermissi
 			exit 101
 			;;
 	esac
+	return $copyExitVal
 }
 
 syncSourceToDest(){
@@ -876,7 +850,7 @@ syncSourceToDest(){
 		
 		# but this leaves the destination's top-level dir modification time to be 
 		# NOW instead of that of the source, so sync this final datum before finishing
-		getPretend || ([[ $copyExitVal -eq true ]] && touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc") # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
+		getPretend || ([[ $copyExitVal == $TRUE ]] && touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc") # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
 		
 	else # if it is a file
 		if [[ $NOOFBACKUPSTOKEEP -gt 0 ]]
@@ -914,8 +888,9 @@ removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not w
 		getVerbose && echo "removing old backup $oldBackupName"
 		# for robust safety of the rm command, let's make sure the variable $oldBackupName contains "-removed-" followed by a date&time and then a "~", in the format -removed-YYYY-MM-DD-HHMM~ , before allowing the rm command to see it
 		[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] &&  getPermission "want to remove old backup $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
-		[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] || echo "variable containing path to rm contained an invalid value '$oldBackupName'. Did not rm. Please report a bug to a maintainer."
+		[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] || echo "variable oldBackupName containing path to rm contained an invalid value '$oldBackupName'. Did not rm. Please report a bug to a maintainer."
 	done
+	return 0
 }
 writeToStatus(){
 	getPretend && return 0; # in pretend mode simply skip this entire function # TODO change this to using "getPretend || command" within the function
@@ -923,13 +898,11 @@ writeToStatus(){
 	local syncDirection="$2"
 	
 	#  - make sure a date line exists 
-	grep "^$itemName $HOSTNAME LASTSYNCDATE .*" $SYNCSTATUSFILE >/dev/null
-	local dateLineExists=$? # if not true then create a new date line
-	if [[ $dateLineExists -ne true ]]; then echo "$itemName $HOSTNAME LASTSYNCDATE x">>$SYNCSTATUSFILE; fi
+	grep -q "^$itemName $HOSTNAME LASTSYNCDATE .*" $SYNCSTATUSFILE && local dateLineExists=$TRUE || local dateLineExists=$FALSE
+	if [[ $dateLineExists == $FALSE ]]; then echo "$itemName $HOSTNAME LASTSYNCDATE x">>$SYNCSTATUSFILE; fi
 	#  - make sure a hosts line exists 
-	grep "^$itemName UPTODATEHOSTS.*$" $SYNCSTATUSFILE >/dev/null
-	local hostsLineExists=$? # if not true then make a new hosts line
-	if [[ $hostsLineExists -ne true ]]; then echo "$itemName UPTODATEHOSTS">>$SYNCSTATUSFILE; fi
+	grep -q "^$itemName UPTODATEHOSTS.*$" $SYNCSTATUSFILE && local hostsLineExists=$TRUE || local hostsLineExists=$TRUE
+	if [[ $hostsLineExists == $FALSE ]]; then echo "$itemName UPTODATEHOSTS">>$SYNCSTATUSFILE; fi
 	
 	# edit the date line to set date of last sync to current time 
 	sed "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $(date +%s)/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
@@ -945,20 +918,61 @@ writeToStatus(){
 		then
 			# then this host just accepted a change from removable drive, it should be on the up-to-date hosts list
 			# if it's not already on the list...
-			grep "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" $SYNCSTATUSFILE >/dev/null
-			local alreadyOnUpToDateHostsList=$?
-			if [[ alreadyOnUpToDateHostsList -ne true ]]
+			grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" $SYNCSTATUSFILE && local alreadyOnUpToDateHostsList=$TRUE || local alreadyOnUpToDateHostsList=$FALSE
+			if [[ alreadyOnUpToDateHostsList == $FALSE ]]
 			then
 				# ... then append it to up-to-date hosts list
 				sed "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" $SYNCSTATUSFILE # WATCH OUT for hard/soft quoting in sed here!
 			fi
 		else
-			echo writeToStatus was passed invalid argument $syncDirection, there is a hard-coded fault
+			echo "writeToStatus was passed invalid argument $syncDirection, there is a hard-coded fault"
 			exit 102
 		fi
 	fi
 	getVerbose && echo "$itemName: status updated."
+	return 0
 }
+statusFileEnsureExistenceOfDateLine(){
+	local itemName="$1"
+	grep -q "^$itemName $HOSTNAME LASTSYNCDATE .*" $SYNCSTATUSFILE && local dateLineExists=$TRUE || local dateLineExists=$FALSE
+	[[ $dateLineExists == $FALSE ]] && echo "$itemName $HOSTNAME LASTSYNCDATE XXX">>$SYNCSTATUSFILE
+	return 0
+}
+statusFileEnsureExistenceOfHostLine(){
+	local itemName="$1"
+	grep -q "^$itemName UPTODATEHOSTS.*$" $SYNCSTATUSFILE && local hostsLineExists=$TRUE || local hostsLineExists=$FALSE
+	[[ $hostsLineExists == $FALSE ]] && echo "$itemName UPTODATEHOSTS">>$SYNCSTATUSFILE
+	return 0
+}
+writeToStatusFileUPTODATEHOSTSassignEmpty(){
+	local itemName="$1"
+	statusFileEnsureExistenceOfHostLine $itemName
+	sed -i "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS/" $SYNCSTATUSFILE # WATCH OUT for hard/soft quoting in sed here!
+	return 0
+}
+writeToStatusFileUPTODATEHOSTSassignThisHost(){
+	local itemName="$1"
+	statusFileEnsureExistenceOfHostLine $itemName
+	sed -i "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS $HOSTNAME,/" $SYNCSTATUSFILE # WATCH OUT for hard/soft quoting in sed here!
+	return 0
+}
+writeToStatusFileUPTODATEHOSTSappendThisHost(){
+	local itemName="$1"
+	statusFileEnsureExistenceOfHostLine $itemName
+	grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" $SYNCSTATUSFILE && local alreadyOnUpToDateHostsList=$TRUE || local alreadyOnUpToDateHostsList=$FALSE
+	[[ alreadyOnUpToDateHostsList == $FALSE ]] && sed -i "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" $SYNCSTATUSFILE # WATCH OUT for hard/soft quoting in sed here!
+	return 0
+}
+writeToStatusFileLASTSYNCDATEnowPlusOffset(){
+	local itemName="$1"
+	local offset="$2"
+	statusFileEnsureExistenceOfDateLine $itemName
+	# edit the date line to set date of last sync to current time + offset
+	local timeStampToSet=$(( $(date +%s) + $offset ))
+	sed -i "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $timeStampToSet/" $SYNCSTATUSFILE # WATCH OUT for hard/soft quoting in sed here!
+	return 0
+}
+
 
 merge(){
 	# similar to a normal sync, this function handles the multiple steps involved in a merge
@@ -976,6 +990,7 @@ merge(){
 			mergeSourceToDest "$itemHostLoc" "$itemRmvblLoc"
 			local copyExitVal=$?
 			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
+			echo "DEBUG writeToStatus exited with "$?
 			echoToLog "$itemName, host merged to removable drive"
 			echoToLog "$itemName, $itemHostLoc, merged to, $itemRmvblLoc, copy exit status=$copyExitVal"
 			
@@ -997,6 +1012,7 @@ merge(){
 			exit 101
 			;;
 	esac
+	return $copyExitVal
 }
 mergeSourceToDest(){
 	# has two structures for "getPretend" - one style prevents executing commands, the other style is always executing rsync but passing the "Pretend" setting forward into rsync --dry-run.
@@ -1051,6 +1067,7 @@ deleteItem(){
 			&& (getPretend || rm -i $optsString "$destLoc") # remove this "-i" option?
 	fi
 	[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] || echo "variable containing path to rm contained an invalid value \"$destLoc\". Did not mv/rm. Please report a bug to a maintainer."
+	return 0
 }
 
 readOptions(){
@@ -1089,6 +1106,7 @@ readOptions(){
 		echo "invalid number given to option '-b' : '$NOOFBACKUPSTOKEEP' "
 		exit 1
 	fi
+	return 0
 }
 
 main(){
@@ -1106,7 +1124,7 @@ main(){
 	# could also use this method to detect presence of other required programs?
 	
 	# check the removable drive is ready
-	readonly RMVBLDIR=$(readlink -m $1)
+	readonly RMVBLDIR=$(readlink -m "$1")
 	if [[ ! -d $RMVBLDIR ]]; then echo $ERRORMESSAGENonexistentRmvbl; exit 4; fi
 	if [[ ! -r $RMVBLDIR ]]; then echo $ERRORMESSAGEUnreadableRmvbl ; exit 5; fi
 	if [[ ! -w $RMVBLDIR ]]; then echo $ERRORMESSAGEUnwritableRmvbl ; exit 6; fi
@@ -1158,7 +1176,7 @@ main(){
 	getVerbose && echo leaving $NOOFBACKUPSTOKEEP 'backup(s) when writing'
 	
 	# begin iterating over the locations listed in LOCSLIST
-	# |while...   : ... stores line contents thus: (first thing on a line) > itemHostLoc [delimeter='|'] (the rest of the line) > itemAlias
+	# command "while IFS='|' read ..."   stores line contents thus: (first thing on a line) > itemHostLoc [delimeter='|'] (the rest of the line) > itemAlias
 	while IFS='|' read itemHostLocRaw itemAlias 
 	do	
 		#local old_IFS=$IFS # save the field separator
@@ -1180,18 +1198,17 @@ main(){
 		# ------ Step 2: retrieve data about this item from SYNCSTATUSFILE ------
 		
 		# does a sync time for this item-this host exist in SYNCSTATUSFILE?
-		local itemDateLine=$(grep "^$itemName $HOSTNAME LASTSYNCDATE .*" $SYNCSTATUSFILE)
-		grep "^$itemName $HOSTNAME LASTSYNCDATE .*" $SYNCSTATUSFILE >/dev/null
-		local itemSyncedPreviously=$?
+		local itemDateLine=$(grep -E "^$itemName $HOSTNAME LASTSYNCDATE [[:digit:]]{9,}" $SYNCSTATUSFILE)
+		grep -qE "^$itemName $HOSTNAME LASTSYNCDATE [[:digit:]]{9,}" $SYNCSTATUSFILE && local itemSyncedPreviously=$TRUE || local itemSyncedPreviously=$FALSE
 		
 		# if given, what is the sync time?
-		if [[ $itemSyncedPreviously -eq true ]]
+		if [[ $itemSyncedPreviously == $TRUE ]]
 		then
 			# extract the sync time from the file using a regular expression
-			itemSyncTime=$(sed "s/$itemName $HOSTNAME LASTSYNCDATE \([[:digit:]][[:digit:]]*\)/\1/" <<<"$itemDateLine") #date string format is seconds since epoch # WATCH OUT for hard/soft quoting in sed here!
+			itemSyncTime=$(grep -oE "[[:digit:]]{9,}$" <<<"$itemDateLine") #date string format is seconds since epoch # WATCH OUT for hard/soft quoting in sed here!
 		fi
 		
-		if [[ $itemSyncedPreviously -eq true ]]
+		if [[ $itemSyncedPreviously == $TRUE ]]
 		then
 			getVerbose && echo status file: synced previously on = $(readableDate $itemSyncTime)
 			echoToLog "$itemName, last synced on, $(readableDate $itemSyncTime)"
@@ -1201,9 +1218,8 @@ main(){
 		fi
 		
 		# is this host shown as up to date with this item?
-		grep "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" $SYNCSTATUSFILE >/dev/null
-		local hostUpToDateWithItem=$?
-		if [[ $hostUpToDateWithItem -eq true ]]
+		grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" $SYNCSTATUSFILE && local hostUpToDateWithItem=$TRUE || local hostUpToDateWithItem=$FALSE
+		if [[ $hostUpToDateWithItem == $TRUE ]]
 		then
 			getVerbose && echo status file: this host has latest changes
 			echoToLog "$itemName, this host has latest changes"
@@ -1213,7 +1229,7 @@ main(){
 		fi
 		
 		# an example of an invalid state for the status 
-		if [[ ($hostUpToDateWithItem -eq true) && ($itemSyncedPreviously -ne true) ]]
+		if [[ ($hostUpToDateWithItem == $TRUE) && ($itemSyncedPreviously == $FALSE) ]]
 		then
 			echo "$itemName: $WARNINGStatusInconsistent"
 			echoToLog "$itemName, $WARNINGStatusInconsistent"
@@ -1229,15 +1245,15 @@ main(){
 		# ------ Step 3: retrieve data from this item from disk ------
 		
 		# check existence
-		[[ -e "$itemHostLoc" ]]; local itemHostExists=$?
-		[[ -e "$itemRmvblLoc" ]]; local itemRmvblExists=$?
+		[[ -e "$itemHostLoc" ]] && local itemHostExists=$TRUE || local itemHostExists=$FALSE
+		[[ -e "$itemRmvblLoc" ]] && local itemRmvblExists=$TRUE || local itemRmvblExists=$FALSE
 		
 		# ------ Step 4: logic ------
 		
 		# --------------------------------if neither removable drive nor host exist--------------------------------
-		if [[ $itemHostExists -ne true && $itemRmvblExists -ne true ]]
+		if [[ $itemHostExists == $FALSE && $itemRmvblExists == $FALSE ]]
 		then
-			if [[ $itemSyncedPreviously -eq true || $hostUpToDateWithItem -eq true ]]
+			if [[ $itemSyncedPreviously == $TRUE || $hostUpToDateWithItem == $TRUE ]]
 			then 
 				# BRANCH END
 				echo "$itemName: $WARNINGSyncStatusForNonexistentItems"
@@ -1256,9 +1272,9 @@ main(){
 		fi
 		
 		# --------------------------------if host exists, but removable drive doesn't--------------------------------
-		if [[ $itemHostExists -eq true && $itemRmvblExists -ne true ]]
+		if [[ $itemHostExists == $TRUE && $itemRmvblExists == $FALSE ]]
 		then
-			if [[ $itemSyncedPreviously -ne true ]]
+			if [[ $itemSyncedPreviously == $FALSE ]]
 			then 
 				# BRANCH END
 				# then sync Host onto the Rmvbl
@@ -1279,9 +1295,9 @@ main(){
 		fi
 		
 		# --------------------------------if removable drive exists, but host doesn't--------------------------------
-		if [[ $itemHostExists -ne true && $itemRmvblExists -eq true ]]
+		if [[ $itemHostExists == $FALSE && $itemRmvblExists == $TRUE ]]
 		then
-			if [[ $itemSyncedPreviously -ne true ]]
+			if [[ $itemSyncedPreviously == $FALSE ]]
 			then 
 				# BRANCH END
 				# then sync Rmvbl onto Host 
@@ -1302,7 +1318,7 @@ main(){
 		fi
 		
 		# --------------------------------if both removable drive and host exist--------------------------------
-		if [[ $itemHostExists -eq true && $itemRmvblExists -eq true ]]
+		if [[ $itemHostExists == $TRUE && $itemRmvblExists == $TRUE ]]
 		then
 			# check for mismatched items
 			if [[ ((-d "$itemHostLoc") && (! -d "$itemRmvblLoc")) || ((! -d "$itemHostLoc") && (-d "$itemRmvblLoc")) ]]
@@ -1324,7 +1340,7 @@ main(){
 			echoToLog "$itemName, host  mod time, $(readableDate $itemHostModTime)"
 			echoToLog "$itemName, rmvbl mod time, $(readableDate $itemRmvblModTime)"
 			
-			if [[ $itemSyncedPreviously -ne true ]]
+			if [[ $itemSyncedPreviously == $FALSE ]]
 			then
 				# then the status in file is in contradiction with the state on disk
 				# offer override to erase the status and proceed
@@ -1341,7 +1357,7 @@ main(){
 			
 			if [[ $itemRmvblModTime -gt $itemSyncTime && $itemSyncTime -gt $itemHostModTime ]]
 			then
-				if [[ $hostUpToDateWithItem -eq true ]]
+				if [[ $hostUpToDateWithItem == $TRUE ]]
 				then
 					# BRANCH END
 					# then item has been modified directly on the removable drive (instead of on a host)
@@ -1366,7 +1382,7 @@ main(){
 			fi
 			if [[ $itemHostModTime -gt $itemSyncTime && $itemSyncTime -gt $itemRmvblModTime ]]
 			then
-				if [[ $hostUpToDateWithItem -eq true ]]
+				if [[ $hostUpToDateWithItem == $TRUE ]]
 				then
 					# BRANCH END
 					# then have history: removable drive synced with host > removable drive hasn't been updated since that sync > host has been updated since that sync
@@ -1402,7 +1418,7 @@ main(){
 			fi
 			if [[ $itemSyncTime -gt $itemRmvblModTime && $itemSyncTime -gt $itemHostModTime ]]
 			then
-				if [[ $hostUpToDateWithItem -eq true ]]
+				if [[ $hostUpToDateWithItem == $TRUE ]]
 				then
 					# BRANCH END
 					# then have history: host and removable drive were synced > no changes > now they are being synced again, i.e. no changes since last sync
@@ -1484,6 +1500,7 @@ main(){
 		
 	
 	getVerbose && echoTitle " end of script "
+	return 0
 }
 
 main "$@"
