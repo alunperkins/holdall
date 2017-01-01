@@ -15,11 +15,14 @@ readonly RMVBL="holdAllTester SimulatedRmvbl"
 readonly LOCSLIST=$RMVBL/syncLocationsOn_$HOSTNAME
 readonly STATUSFILE=$RMVBL/syncStatus
 
-readonly MON=1388966400 # a date in seconds since epoch
+# some dates in seconds since epoch
+readonly MON=1388966400 # Mon 06 Jan 2014
 readonly TUE=1389052800
 readonly WED=1389139200
 readonly THU=1389225600
-readonly FRI=1389312000
+readonly FRI=1389312000 # Fri 10 Jan 2014
+# a time between those days and the current time
+readonly SAT=1483197947 
 
 report="UNIT@RESULT@DESCRIPTION" # global, but not readonly!
 
@@ -81,14 +84,52 @@ setSyncTime(){
 	local time="$2"
 	echo "$itemName $HOSTNAME LASTSYNCDATE $time" >> "$STATUSFILE"
 }
+getSyncTime(){
+	local itemName="$1"
+	local lastSyncTime=$(sed -n "s/$itemName $HOSTNAME LASTSYNCDATE \([0-9]*\)/\1/p" "$STATUSFILE")
+	echo $lastSyncTime
+}
 setUTDTrue(){
 	local itemName="$1"
-	echo "$itemName UPTODATEHOSTS $HOSTNAME," >> "$STATUSFILE"
+	echo "$itemName UPTODATEHOSTS someOtherHost, $HOSTNAME," >> "$STATUSFILE"
+}
+setUTDFalse(){
+	local itemName="$1"
+	echo "$itemName UPTODATEHOSTS someOtherHost," >> "$STATUSFILE"
 }
 addToLocsList(){
 	local itemName="$1"
 	echo "$HOST/$itemName" >> "$LOCSLIST"
 }
+
+checkLastSyncTimeHasBeenUpdated(){
+	local itemName="$1"
+	local lastSyncTime=$(sed -n "s/$itemName $HOSTNAME LASTSYNCDATE \([0-9]*\)/\1/p" "$STATUSFILE")
+	[[ $lastSyncTime -gt $SAT ]] && return 0 || return 1
+}
+checkLastSyncTimeAbsent(){
+	local itemName="$1"
+	grep "$itemName $HOSTNAME LASTSYNCDATE" "$STATUSFILE" && return 1 || return 0
+}
+checkUTDisJustThisHost(){
+	local itemName="$1"
+	grep -q "^$itemName UPTODATEHOSTS $HOSTNAME," "$STATUSFILE" && local hostUTD="true" || local hostUTD="false"
+	grep -q "^$itemName UPTODATEHOSTS.* someOtherHost,.*$" "$STATUSFILE" && local someOtherHostUTD="true" || local someOtherHostUTD="false"
+	[[ $hostUTD == true && $someOtherHostUTD == false ]] && return 0 || return 1
+}
+checkUTDisJustSomeOtherHost(){
+	local itemName="$1"
+	grep -q "^$itemName UPTODATEHOSTS someOtherHost," "$STATUSFILE" && local someOtherHostUTD="true" || local someOtherHostUTD="false"
+	grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" "$STATUSFILE" && local hostUTD="true" || local hostUTD="false"
+	[[ $hostUTD == false && $someOtherHostUTD == true ]] && return 0 || return 1
+}
+checkUTDisThisHostAndSomeOtherHost(){
+	local itemName="$1"
+	grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" "$STATUSFILE" && local hostUTD="true" || local hostUTD="false"
+	grep -q "^$itemName UPTODATEHOSTS.* someOtherHost,.*$" "$STATUSFILE" && local someOtherHostUTD="true" || local someOtherHostUTD="false"
+	[[ $hostUTD == true && $someOtherHostUTD == true ]] && return 0 || return 1
+}
+
 
 # NOTATION
 # HE = item exists on host
@@ -126,6 +167,7 @@ unit001Check(){
 	[[ $(cat "$RMVBL/$itemName"-removed*/*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 # unit002 DESCRIPTION:  RT < ST < HT, NUTD, should say fork and merge host>rmvbl 
@@ -148,6 +190,7 @@ unit002Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 # unit003 DESCRIPTION:  HT < ST < RT, UTD, should say DMD and sync rmvbl>host 
@@ -171,6 +214,7 @@ unit003Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName.*removable drive.*modified directly"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 # unit004 DESCRIPTION:  HT < ST < RT, NUTD, should sync rmvbl>host 
@@ -192,6 +236,7 @@ unit004Check(){
 	[[ $(cat "$HOST/$itemName"-removed*/*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 
@@ -217,6 +262,7 @@ unit020Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 # unit021 DESCRIPTION:  ST < HT < RT, NUTD, should say fork and merge rmvbl>host 
@@ -239,6 +285,7 @@ unit021Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 # unit022 DESCRIPTION:  ST < RT < HT, UTD, should say fork and merge host>rmvbl 
@@ -262,6 +309,7 @@ unit022Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 # unit023 DESCRIPTION:  ST < RT < HT, NUTD, should say fork and merge host>rmvbl 
@@ -284,6 +332,7 @@ unit023Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 # unit024 DESCRIPTION:  ST < RT = HT, UTD, should say fork and do nothing 
@@ -306,6 +355,7 @@ unit024Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $MON ]] || return 10
 	return 0
 }
 # unit025 DESCRIPTION:  ST < RT = HT, NUTD, should say fork and do nothing 
@@ -327,9 +377,10 @@ unit025Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $MON ]] || return 10
 	return 0
 }
-																								  
+
 # units with sync time after both host time and rmvbl time
 # unit030 DESCRIPTION:  HT < RT < ST, UTD, should say unreachable error and do nothing 
 unit030Initialise(){
@@ -351,6 +402,7 @@ unit030Check(){
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	return 0
 }
 # unit031 DESCRIPTION:  HT < RT < ST, NUTD, should sync rmvbl>host 
@@ -372,6 +424,7 @@ unit031Check(){
 	[[ $(cat "$HOST/$itemName"-removed*/*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 # unit032 DESCRIPTION:  RT < HT < ST, UTD, should say unreachable error and do nothing 
@@ -394,6 +447,7 @@ unit032Check(){
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	return 0
 }
 # unit033 DESCRIPTION:  RT < HT < ST, NUTD, should say error and do nothing 
@@ -414,6 +468,7 @@ unit033Check(){
 	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
+	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	return 0
 }
 # unit034 DESCRIPTION:  RT = HT < ST, UTD, this is the "no changes" state, should do nothing 
@@ -435,6 +490,7 @@ unit034Check(){
 	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
+	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	return 0
 }
 # unit035 DESCRIPTION:  RT = HT < ST, NUTD, should say unreachable error and do nothing 
@@ -456,6 +512,7 @@ unit035Check(){
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	return 0
 }
 
@@ -480,6 +537,7 @@ unit040Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	return 0
 }
 # unit041 DESCRIPTION:  RT < HT = ST, NUTD, should say error and do nothing 
@@ -501,6 +559,7 @@ unit041Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	return 0
 }
 # unit042 DESCRIPTION:  HT = ST < RT, UTD, should say error and do nothing 
@@ -523,6 +582,7 @@ unit042Check(){
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $MON ]] || return 10
 	return 0
 }
 # unit043 DESCRIPTION:  HT = ST < RT, NUTD, should say error and do nothing 
@@ -544,6 +604,7 @@ unit043Check(){
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $MON ]] || return 10
 	return 0
 }
 # unit044 DESCRIPTION:  HT < ST = RT, UTD, should say error and do nothing 
@@ -566,6 +627,7 @@ unit044Check(){
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	return 0
 }
 # unit045 DESCRIPTION:  HT < ST = RT, NUTD, should say error and do nothing 
@@ -587,6 +649,7 @@ unit045Check(){
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	return 0
 }
 # unit046 DESCRIPTION:  RT = ST < HT, UTD, should say error and do nothing 
@@ -609,6 +672,7 @@ unit046Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $MON ]] || return 10
 	return 0
 }
 # unit047 DESCRIPTION:  RT = ST < HT, NUTD, should say error and do nothing 
@@ -630,6 +694,7 @@ unit047Check(){
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $MON ]] || return 10
 	return 0
 }
 # unit048 DESCRIPTION:  RT = ST = HT, UTD, should say error and do nothing 
@@ -652,6 +717,7 @@ unit048Check(){
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $WED ]] || return 10
 	return 0
 }
 # unit049 DESCRIPTION:  RT = ST = HT, NUTD, should say error and do nothing 
@@ -673,13 +739,14 @@ unit049Check(){
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	[[ $(getSyncTime "$itemName") -eq $WED ]] || return 10
 	return 0
 }
 
 # units 50-99 deal with cases of incomplete sync record and/or missing files/folders
 
 # units where there is no record of a previous sync time, but the host is listed as up to date (this is unreachable)
-# unit050 DESCRIPTION:  NSP, UTD, HE, RE, should say sync status is inconsistent
+# unit050 DESCRIPTION:  NSP, UTD, HE, RE, should say sync status is inconsistent, erase record
 unit050Initialise(){
 	local itemName="unit 050"
 	addToLocsList "$itemName"
@@ -696,9 +763,10 @@ unit050Check(){
 	[[ $(cat "$HOST/$itemName") == "host content" ]] || return 1
 	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGStatusInconsistent"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeAbsent "$itemName" || return 10
 	return 0
 }
-# unit051 DESCRIPTION:  NSP, UTD, HE, NRE, should say sync record is missing
+# unit051 DESCRIPTION:  NSP, UTD, HE, NRE, should say sync record is missing, erase record
 unit051Initialise(){
 	local itemName="unit 051"
 	addToLocsList "$itemName"
@@ -712,9 +780,10 @@ unit051Check(){
 	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGStatusInconsistent"<<<"$holdallOutput" >/dev/null || return 6
 	[[ -e "$RMVBL/$itemName" ]] && return 7
+	checkLastSyncTimeAbsent "$itemName" || return 10
 	return 0
 }
-# unit052 DESCRIPTION:  NSP, UTD, NHE, RE, should say sync record is missing
+# unit052 DESCRIPTION:  NSP, UTD, NHE, RE, should say sync record is missing, erase record
 unit052Initialise(){
 	local itemName="unit 052"
 	addToLocsList "$itemName"
@@ -728,9 +797,10 @@ unit052Check(){
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGStatusInconsistent"<<<"$holdallOutput" >/dev/null || return 6
 	[[ -e "$HOST/$itemName" ]] && return 7
+	checkLastSyncTimeAbsent "$itemName" || return 10
 	return 0
 }
-# unit053 DESCRIPTION:  NSP, UTD, NHE, NRE, should say sync record is missing
+# unit053 DESCRIPTION:  NSP, UTD, NHE, NRE, should say sync record is missing, erase record
 unit053Initialise(){
 	local itemName="unit 053"
 	addToLocsList "$itemName"
@@ -739,11 +809,12 @@ unit053Initialise(){
 unit053Check(){
 	local itemName="unit 053"
 	grep "$itemName: $WARNINGStatusInconsistent"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeAbsent "$itemName" || return 10
 	return 0
 }
 
 # units where neither item is not on host nor removable
-# unit060 DESCRIPTION: SP, UTD, NHE, NRE, should say sync record for missing items
+# unit060 DESCRIPTION: SP, UTD, NHE, NRE, should say sync record for missing items, erase record
 unit060Initialise(){
 	local itemName="unit 060"
 	addToLocsList "$itemName"
@@ -753,9 +824,10 @@ unit060Initialise(){
 unit060Check(){
 	local itemName="unit 060"
 	grep "$itemName: $WARNINGSyncStatusForNonexistentItems"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeAbsent "$itemName" || return 10
 	return 0
 }
-# unit061 DESCRIPTION: SP, NUTD, NHE, NRE, should say sync record for missing items
+# unit061 DESCRIPTION: SP, NUTD, NHE, NRE, should say sync record for missing items, erase record
 unit061Initialise(){
 	local itemName="unit 061"
 	addToLocsList "$itemName"
@@ -764,6 +836,7 @@ unit061Initialise(){
 unit061Check(){
 	local itemName="unit 061"
 	grep "$itemName: $WARNINGSyncStatusForNonexistentItems"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeAbsent "$itemName" || return 10
 	return 0
 }
 # unit062 DESCRIPTION: NSP, NUTD, NHE, NRE, should say nonexistent items
@@ -774,6 +847,7 @@ unit062Initialise(){
 unit062Check(){
 	local itemName="unit 062"
 	grep "$itemName: $WARNINGNonexistentItems"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeAbsent "$itemName" || return 10
 	return 0
 }
 
@@ -793,6 +867,7 @@ unit070Check(){
 	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGSyncedButRmvblAbsent"<<<"$holdallOutput" >/dev/null || return 6
 	[[ -e "$RMVBL/$itemName" ]] && return 7
+	[[ $(getSyncTime "$itemName") -eq $THU ]] || return 10
 	return 0
 }
 # unit071 DESCRIPTION: SP, NUTD, HE, NRE, should say rmvbl is missing
@@ -809,6 +884,7 @@ unit071Check(){
 	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGSyncedButRmvblAbsent"<<<"$holdallOutput" >/dev/null || return 6
 	[[ -e "$RMVBL/$itemName" ]] && return 7
+	[[ $(getSyncTime "$itemName") -eq $THU ]] || return 10
 	return 0
 }
 # unit072 DESCRIPTION: NSP, NUTD, HE, NRE, should sync host>rmvbl
@@ -825,6 +901,7 @@ unit072Check(){
 	[[ $(cat "$RMVBL/$itemName") == "host content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $TUE ]] || return 5
 	grep "$itemName: first time syncing from host to removable drive"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 
@@ -844,6 +921,7 @@ unit080Check(){
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGSyncedButHostAbsent"<<<"$holdallOutput" >/dev/null || return 6
 	[[ -e "$HOST/$itemName" ]] && return 7
+	[[ $(getSyncTime "$itemName") -eq $THU ]] || return 10
 	return 0
 }
 # unit081 DESCRIPTION: SP, NUTD, NHE, RE, should say host is missing
@@ -860,6 +938,7 @@ unit081Check(){
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGSyncedButHostAbsent"<<<"$holdallOutput" >/dev/null || return 6
 	[[ -e "$HOST/$itemName" ]] && return 7
+	[[ $(getSyncTime "$itemName") -eq $THU ]] || return 10
 	return 0
 }
 # unit082 DESCRIPTION: NSP, NUTD, NHE, RE, should sync rmvbl>host
@@ -876,6 +955,7 @@ unit082Check(){
 	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: first time syncing from removable drive to host"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 
@@ -897,6 +977,7 @@ unit090Check(){
 	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 # unit091 DESCRIPTION: NSP, NUTD, HE, RE, RT < HT, should say sync record is missing, merge host>rmvbl
@@ -916,6 +997,7 @@ unit091Check(){
 	[[ $(cat "$RMVBL/$itemName") == "host content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
 	return 0
 }
 # unit092 DESCRIPTION: NSP, NUTD, HE, RE, HT = RT, should say sync record is missing, do no merge
@@ -934,6 +1016,7 @@ unit092Check(){
 	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $TUE ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
+	checkLastSyncTimeAbsent "$itemName" || return 10
 	return 0
 }
 
