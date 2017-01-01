@@ -9,8 +9,8 @@ readonly TRUE=TRUE # can be any unique string
 readonly FALSE=FALSE # can be any unique string
 
 #readonly ARGS=$@
-readonly PROGNAME=$(basename $0)
-readonly PROGDIR=$(readlink -m $(dirname $0))
+readonly PROGNAME="$(basename "$0")"
+readonly PROGDIR="$(readlink -m "$(dirname $0)")"
 readonly DEFAULTNOOFBACKUPSTOKEEP=2
 
 readonly HOSTLOGFILE="$HOME"/"$PROGNAME"_Log # /var/log/holdall # one doesn't always have write access to /var/log?
@@ -292,7 +292,7 @@ cleanCommentsAndWhitespace(){
 	# 2. remove leading whitespace - sed to replace leading whitespace with nothing
 	# 3. remove trailing whitespace - sed to replace trailing whitespace with nothing
 	local outputFile="$(\
-		grep -o ^[^#]* $inputFile \
+		grep -o ^[^#]* "$inputFile" \
 		| sed 's/^[[:space:]]*//' \
 		| sed 's/[[:space:]]*$//' \
 	)"
@@ -300,7 +300,8 @@ cleanCommentsAndWhitespace(){
 	return 0
 }
 addLocationToLocsList(){
-	local locationToAdd="$1"
+	local locationToAddRaw="$1"
+	local locationToAdd="$(readlink -m "$locationToAddRaw")"
 	echo appending the text "'$locationToAdd'" as a line at the end of the locations-list file.
 	getPermission "Is that correct?" && (getPretend || echo "$locationToAdd" >> "$LOCSLIST")
 	return $?
@@ -343,7 +344,7 @@ listLocsListContents(){
 	# 6: sort
 	# 7: uniq to remove entries that are invalid because they clash with other entries - keep only non-repeated lines
 	local listOfItemNames="$(\
-	cleanCommentsAndWhitespace $LOCSLIST \
+	cleanCommentsAndWhitespace "$LOCSLIST" \
 	| grep -o "[^|]*$" \
 	| sed 's:^\(.*\)/$:\1:' \
 	| grep -o "[^/]*$" \
@@ -352,7 +353,7 @@ listLocsListContents(){
 	| uniq --unique \
 	)"
 	
-	local listOfItemNamesOnRmvbl="$(ls -B $RMVBLDIR)"
+	local listOfItemNamesOnRmvbl="$(ls -B "$RMVBLDIR")"
 	local listItemsNotSynced=$(comm -23 <(echo "$listOfItemNamesOnRmvbl") <(echo "$listOfItemNames"))
 	# comm -23 is returning things appearing in $listOfItemNamesOnRmvbl but not in $listOfItemNames
 	local listItemsNotSyncedButAreSyncable=$(grep -v "^syncStatus$" <<< "$listItemsNotSynced" | grep -v "^syncLocationsOn_" | grep -v "^syncLog$")
@@ -382,7 +383,7 @@ analyseLocsList(){
 	
 	# check for names appearing more than once
 	local listOfRepeatedNames=$(\
-	cleanCommentsAndWhitespace $LOCSLIST \
+	cleanCommentsAndWhitespace "$LOCSLIST" \
 	| sed -e "s/^.*|\(.*\)/\1/" -e "s/^.*\/\(.*\)/\1/" \
 	| grep -v "^\s*$" \
 	| sort \
@@ -400,7 +401,7 @@ analyseLocsList(){
 	#| uniq -d \
 	#)
 	local listOfLocations=$(\
-	cleanCommentsAndWhitespace $LOCSLIST \
+	cleanCommentsAndWhitespace "$LOCSLIST" \
 	| grep -o "^[^|]*" \
 	| grep -v "^\s*$" \
 	)
@@ -462,7 +463,7 @@ createLocsListTemplateDialog(){
 createLocsListTemplate(){
 	getPretend && return 0
 	# a here script
-	cat <<- _EOF_ >$LOCSLIST
+	cat <<- _EOF_ >"$LOCSLIST"
 	# this file is for use with the synchronisation program $PROGNAME (in $PROGDIR)
 	# This file supports comments on a line after a #.
 	# give the locations of files and folders you wish to sync.
@@ -498,12 +499,12 @@ noSyncStatusFileDialog(){
 		local input=""
 		read -p '   > ' input
 	else
-		echo Automatic mode set - creating new sync status file $SYNCSTATUSFILE
+		echo "Automatic mode set - creating new sync status file $SYNCSTATUSFILE"
 		local input=$YES
 	fi
 	if [[ $input == $YES ]]
 	then
-		getPretend || touch $SYNCSTATUSFILE
+		getPretend || touch "$SYNCSTATUSFILE"
 		echoToLog "created sync data file $SYNCSTATUSFILE"
 	else
 		echo "not generating a file"
@@ -522,7 +523,7 @@ xdgOpenLocsListDialogAndExit(){
 		echo "Automatic mode set - not opening the locations-list file in your default editor."
 		input="$CANCEL" # obvs no point in opening the editor if the user doesn't want to have to interact
 	fi
-	if [[ $input == $YES ]]; then xdg-open $LOCSLIST; fi
+	if [[ $input == $YES ]]; then xdg-open "$LOCSLIST"; fi
 	exit 9 # return 0
 }
 eraseItemFromStatusFileDialog(){
@@ -537,7 +538,7 @@ eraseItemFromStatusFileDialog(){
 	else
 		echo "Automatic mode set - erasing this item from the status"
 		echo "creating backup of current status $SYNCSTATUSFILE in $SYNCSTATUSFILE.bckp"
-		getPretend || cp $SYNCSTATUSFILE $SYNCSTATUSFILE.bckp
+		getPretend || cp "$SYNCSTATUSFILE" "$SYNCSTATUSFILE.bckp"
 		local input=$YES
 	fi
 	if [[ $input == $YES ]]
@@ -553,7 +554,7 @@ eraseItemFromStatusFileDialog(){
 eraseItemFromStatusFile(){
 	getPretend && return 0
 	local itemName="$1"
-	sed -e "s/^$itemName $HOSTNAME LASTSYNCDATE .*//" -e "s/\(^$itemName UPTODATEHOSTS.*\) $HOSTNAME,\(.*\)/\1\2/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
+	sed -e "s/^$itemName $HOSTNAME LASTSYNCDATE .*//" -e "s/\(^$itemName UPTODATEHOSTS.*\) $HOSTNAME,\(.*\)/\1\2/" <"$SYNCSTATUSFILE" >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	grep -v '^\s*$' <"$SYNCSTATUSFILE" | sort >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE"
 	echoToLog "$itemName, erased from sync data file"
 	return 0
@@ -898,31 +899,31 @@ writeToStatus(){
 	local syncDirection="$2"
 	
 	#  - make sure a date line exists 
-	grep -q "^$itemName $HOSTNAME LASTSYNCDATE .*" $SYNCSTATUSFILE && local dateLineExists=$TRUE || local dateLineExists=$FALSE
-	if [[ $dateLineExists == $FALSE ]]; then echo "$itemName $HOSTNAME LASTSYNCDATE x">>$SYNCSTATUSFILE; fi
+	grep -q "^$itemName $HOSTNAME LASTSYNCDATE .*" "$SYNCSTATUSFILE" && local dateLineExists=$TRUE || local dateLineExists=$FALSE
+	if [[ $dateLineExists == $FALSE ]]; then echo "$itemName $HOSTNAME LASTSYNCDATE x">>"$SYNCSTATUSFILE"; fi
 	#  - make sure a hosts line exists 
-	grep -q "^$itemName UPTODATEHOSTS.*$" $SYNCSTATUSFILE && local hostsLineExists=$TRUE || local hostsLineExists=$TRUE
-	if [[ $hostsLineExists == $FALSE ]]; then echo "$itemName UPTODATEHOSTS">>$SYNCSTATUSFILE; fi
+	grep -q "^$itemName UPTODATEHOSTS.*$" "$SYNCSTATUSFILE" && local hostsLineExists=$TRUE || local hostsLineExists=$TRUE
+	if [[ $hostsLineExists == $FALSE ]]; then echo "$itemName UPTODATEHOSTS">>"$SYNCSTATUSFILE"; fi
 	
 	# edit the date line to set date of last sync to current time 
-	sed "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $(date +%s)/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
+	sed "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $(date +%s)/" <"$SYNCSTATUSFILE" >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	
 	# update the hosts line
 	# this should be made into a CASE statement
 	if [[ $syncDirection == $DIRECTIONHOSTTORMVBL ]]
 	then
 		# then removable drive just accepted a change from this host, delete all other hosts from up-to-date list
-		sed "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS $HOSTNAME,/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
+		sed "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS $HOSTNAME,/" <"$SYNCSTATUSFILE" >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	else
 		if [[ $syncDirection == $DIRECTIONRMVBLTOHOST ]]
 		then
 			# then this host just accepted a change from removable drive, it should be on the up-to-date hosts list
 			# if it's not already on the list...
-			grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" $SYNCSTATUSFILE && local alreadyOnUpToDateHostsList=$TRUE || local alreadyOnUpToDateHostsList=$FALSE
+			grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" "$SYNCSTATUSFILE" && local alreadyOnUpToDateHostsList=$TRUE || local alreadyOnUpToDateHostsList=$FALSE
 			if [[ alreadyOnUpToDateHostsList == $FALSE ]]
 			then
 				# ... then append it to up-to-date hosts list
-				sed "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" <$SYNCSTATUSFILE >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" $SYNCSTATUSFILE # WATCH OUT for hard/soft quoting in sed here!
+				sed "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" <"$SYNCSTATUSFILE" >"$SYNCSTATUSFILE.tmp" && mv "$SYNCSTATUSFILE.tmp" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 			fi
 		else
 			echo "writeToStatus was passed invalid argument $syncDirection, there is a hard-coded fault"
@@ -934,33 +935,33 @@ writeToStatus(){
 }
 statusFileEnsureExistenceOfDateLine(){
 	local itemName="$1"
-	grep -q "^$itemName $HOSTNAME LASTSYNCDATE .*" $SYNCSTATUSFILE && local dateLineExists=$TRUE || local dateLineExists=$FALSE
-	[[ $dateLineExists == $FALSE ]] && echo "$itemName $HOSTNAME LASTSYNCDATE XXX">>$SYNCSTATUSFILE
+	grep -q "^$itemName $HOSTNAME LASTSYNCDATE .*" "$SYNCSTATUSFILE" && local dateLineExists=$TRUE || local dateLineExists=$FALSE
+	[[ $dateLineExists == $FALSE ]] && echo "$itemName $HOSTNAME LASTSYNCDATE XXX">>"$SYNCSTATUSFILE"
 	return 0
 }
 statusFileEnsureExistenceOfHostLine(){
 	local itemName="$1"
-	grep -q "^$itemName UPTODATEHOSTS.*$" $SYNCSTATUSFILE && local hostsLineExists=$TRUE || local hostsLineExists=$FALSE
-	[[ $hostsLineExists == $FALSE ]] && echo "$itemName UPTODATEHOSTS">>$SYNCSTATUSFILE
+	grep -q "^$itemName UPTODATEHOSTS.*$" "$SYNCSTATUSFILE" && local hostsLineExists=$TRUE || local hostsLineExists=$FALSE
+	[[ $hostsLineExists == $FALSE ]] && echo "$itemName UPTODATEHOSTS">>"$SYNCSTATUSFILE"
 	return 0
 }
 writeToStatusFileUPTODATEHOSTSassignEmpty(){
 	local itemName="$1"
 	statusFileEnsureExistenceOfHostLine $itemName
-	sed -i "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS/" $SYNCSTATUSFILE # WATCH OUT for hard/soft quoting in sed here!
+	sed -i "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS/" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	return 0
 }
 writeToStatusFileUPTODATEHOSTSassignThisHost(){
 	local itemName="$1"
 	statusFileEnsureExistenceOfHostLine $itemName
-	sed -i "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS $HOSTNAME,/" $SYNCSTATUSFILE # WATCH OUT for hard/soft quoting in sed here!
+	sed -i "s/^$itemName UPTODATEHOSTS.*/$itemName UPTODATEHOSTS $HOSTNAME,/" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	return 0
 }
 writeToStatusFileUPTODATEHOSTSappendThisHost(){
 	local itemName="$1"
 	statusFileEnsureExistenceOfHostLine $itemName
-	grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" $SYNCSTATUSFILE && local alreadyOnUpToDateHostsList=$TRUE || local alreadyOnUpToDateHostsList=$FALSE
-	[[ alreadyOnUpToDateHostsList == $FALSE ]] && sed -i "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" $SYNCSTATUSFILE # WATCH OUT for hard/soft quoting in sed here!
+	grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" "$SYNCSTATUSFILE" && local alreadyOnUpToDateHostsList=$TRUE || local alreadyOnUpToDateHostsList=$FALSE
+	[[ alreadyOnUpToDateHostsList == $FALSE ]] && sed -i "s/^$itemName UPTODATEHOSTS\(.*\)$/$itemName UPTODATEHOSTS\1 $HOSTNAME,/" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	return 0
 }
 writeToStatusFileLASTSYNCDATEnowPlusOffset(){
@@ -969,7 +970,7 @@ writeToStatusFileLASTSYNCDATEnowPlusOffset(){
 	statusFileEnsureExistenceOfDateLine $itemName
 	# edit the date line to set date of last sync to current time + offset
 	local timeStampToSet=$(( $(date +%s) + $offset ))
-	sed -i "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $timeStampToSet/" $SYNCSTATUSFILE # WATCH OUT for hard/soft quoting in sed here!
+	sed -i "s/^$itemName $HOSTNAME LASTSYNCDATE.*/$itemName $HOSTNAME LASTSYNCDATE $timeStampToSet/" "$SYNCSTATUSFILE" # WATCH OUT for hard/soft quoting in sed here!
 	return 0
 }
 
@@ -1124,10 +1125,10 @@ main(){
 	# could also use this method to detect presence of other required programs?
 	
 	# check the removable drive is ready
-	readonly RMVBLDIR=$(readlink -m "$1")
-	if [[ ! -d $RMVBLDIR ]]; then echo $ERRORMESSAGENonexistentRmvbl; exit 4; fi
-	if [[ ! -r $RMVBLDIR ]]; then echo $ERRORMESSAGEUnreadableRmvbl ; exit 5; fi
-	if [[ ! -w $RMVBLDIR ]]; then echo $ERRORMESSAGEUnwritableRmvbl ; exit 6; fi
+	readonly RMVBLDIR="$(readlink -m "$1")"
+	if [[ ! -d "$RMVBLDIR" ]]; then echo $ERRORMESSAGENonexistentRmvbl; exit 4; fi
+	if [[ ! -r "$RMVBLDIR" ]]; then echo $ERRORMESSAGEUnreadableRmvbl ; exit 5; fi
+	if [[ ! -w "$RMVBLDIR" ]]; then echo $ERRORMESSAGEUnwritableRmvbl ; exit 6; fi
 	echo "syncing with [removable drive] directory $RMVBLDIR"
 	# name of log file
 	readonly LOGFILE="$RMVBLDIR/syncLog"
@@ -1138,15 +1139,15 @@ main(){
 	then
 		readonly LOCSLIST="$RMVBLDIR/syncLocationsOn_$HOSTNAME" 
 	else
-		readonly LOCSLIST="$(readlink -m $CUSTOMLOCATIONSFILE)"
+		readonly LOCSLIST="$(readlink -m "$CUSTOMLOCATIONSFILE")"
 	fi
-	if [[ ! -e $LOCSLIST ]]; then createLocsListTemplateDialog; fi
-	if [[ ! -r $LOCSLIST ]]; then echo $ERRORMESSAGEUnreadableLocsList; exit 7; fi
+	if [[ ! -e "$LOCSLIST" ]]; then createLocsListTemplateDialog; fi
+	if [[ ! -r "$LOCSLIST" ]]; then echo $ERRORMESSAGEUnreadableLocsList; exit 7; fi
 	echo "reading locations from locations-list file $LOCSLIST"
 	# optionally append a new entry to LOCSLIST
 	if [[ ! -z "$ADDEDLOCATION" ]]
 	then
-		if [[ ! -w $LOCSLIST ]]; then echo $ERRORMESSAGEUnwritableLocsList; exit 8; fi
+		if [[ ! -w "$LOCSLIST" ]]; then echo $ERRORMESSAGEUnwritableLocsList; exit 8; fi
 		addLocationToLocsList "$ADDEDLOCATION"
 	fi
 	# if we are in list mode then list the contents of LOCSLIST and exit
@@ -1155,7 +1156,7 @@ main(){
 		listLocsListContents # prints/explains contents of LOCSLIST and exits
 	fi
 	scanLocsList # exits if there are problems
-	noOfEntriesInLocsList=$(cleanCommentsAndWhitespace $LOCSLIST \
+	noOfEntriesInLocsList=$(cleanCommentsAndWhitespace "$LOCSLIST" \
 	   | grep -v '^\s*$' \
 	   | wc -l \
 	)
@@ -1170,8 +1171,8 @@ main(){
 	
 	# check the status file is ready
 	readonly SYNCSTATUSFILE="$RMVBLDIR/syncStatus"
-	if [[ ! -e $SYNCSTATUSFILE ]]; then noSyncStatusFileDialog; fi # noSyncStatusFileDialog will create a syncStatusFile or exit
-	if [[ ! -r $SYNCSTATUSFILE || ! -w $SYNCSTATUSFILE ]]; then echo $ERRORMESSAGEPermissionsSyncStatusFile; exit 10; fi
+	if [[ ! -e "$SYNCSTATUSFILE" ]]; then noSyncStatusFileDialog; fi # noSyncStatusFileDialog will create a syncStatusFile or exit
+	if [[ ! -r "$SYNCSTATUSFILE" || ! -w "$SYNCSTATUSFILE" ]]; then echo $ERRORMESSAGEPermissionsSyncStatusFile; exit 10; fi
 	
 	getVerbose && echo leaving $NOOFBACKUPSTOKEEP 'backup(s) when writing'
 	
@@ -1190,7 +1191,7 @@ main(){
 		
 		local itemHostLoc=$(readlink -m "$itemHostLocRaw")
 		if [[ -z "$itemAlias" ]]; then local itemName=$(basename "$itemHostLoc"); else local itemName="$itemAlias"; fi
-		local itemRmvblLoc=$RMVBLDIR/"$itemName"
+		local itemRmvblLoc="$RMVBLDIR/$itemName"
 		echoTitle " $itemName "
 		
 		echo syncing $itemHostLoc with $itemRmvblLoc
@@ -1198,8 +1199,8 @@ main(){
 		# ------ Step 2: retrieve data about this item from SYNCSTATUSFILE ------
 		
 		# does a sync time for this item-this host exist in SYNCSTATUSFILE?
-		local itemDateLine=$(grep -E "^$itemName $HOSTNAME LASTSYNCDATE [[:digit:]]{9,}" $SYNCSTATUSFILE)
-		grep -qE "^$itemName $HOSTNAME LASTSYNCDATE [[:digit:]]{9,}" $SYNCSTATUSFILE && local itemSyncedPreviously=$TRUE || local itemSyncedPreviously=$FALSE
+		local itemDateLine=$(grep -E "^$itemName $HOSTNAME LASTSYNCDATE [[:digit:]]{9,}" "$SYNCSTATUSFILE")
+		grep -qE "^$itemName $HOSTNAME LASTSYNCDATE [[:digit:]]{9,}" "$SYNCSTATUSFILE" && local itemSyncedPreviously=$TRUE || local itemSyncedPreviously=$FALSE
 		
 		# if given, what is the sync time?
 		if [[ $itemSyncedPreviously == $TRUE ]]
@@ -1218,7 +1219,7 @@ main(){
 		fi
 		
 		# is this host shown as up to date with this item?
-		grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" $SYNCSTATUSFILE && local hostUpToDateWithItem=$TRUE || local hostUpToDateWithItem=$FALSE
+		grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" "$SYNCSTATUSFILE" && local hostUpToDateWithItem=$TRUE || local hostUpToDateWithItem=$FALSE
 		if [[ $hostUpToDateWithItem == $TRUE ]]
 		then
 			getVerbose && echo status file: this host has latest changes
@@ -1488,7 +1489,7 @@ main(){
 		fi # end of the "if all exist" block
 		# ----------------note that that's all four of the non/existence cases, this area is UNREACHABLE----------------
 		
-	done < <(cleanCommentsAndWhitespace $LOCSLIST) # end of while loop over items
+	done < <(cleanCommentsAndWhitespace "$LOCSLIST") # end of while loop over items
 	
 	# trim log file to a reasonable length
 	tail -n $LOGFILEMAXLENGTH "$LOGFILE" > "$LOGFILE.tmp" 2> /dev/null && mv "$LOGFILE.tmp" "$LOGFILE"

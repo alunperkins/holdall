@@ -1,12 +1,17 @@
 #!/bin/bash
 
+# the "unofficial bash strict mode" convention, recommended by Aaron Maxwell http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -e
+set -u
+set -o pipefail
+
 readonly PROGNAME=$(basename $0)
 
 # this tests the logic of holdall for different mod time/history configurations, to see if it does the sync in the correct direction
 # it tests files only, not folders
 
-readonly HOST=holdAllTesterSimulatedHost
-readonly RMVBL=holdAllTesterSimulatedRmvbl
+readonly HOST="holdAllTester SimulatedHost"
+readonly RMVBL="holdAllTester SimulatedRmvbl"
 readonly LOCSLIST=$RMVBL/syncLocationsOn_$HOSTNAME
 readonly STATUSFILE=$RMVBL/syncStatus
 
@@ -53,38 +58,36 @@ setHostTime(){
 }
 getRmvblTime(){
 	local itemName="$1"
-	local time="$2"
 	echo $(date -r "$RMVBL/$itemName" +%s)
 }
 getHostTime(){
 	local itemName="$1"
-	local time="$2"
 	echo $(date -r "$HOST/$itemName" +%s)
 }
 
 writeToRmvbl(){
 	local itemName="$1"
 	local message="$2"
-	echo "$message" >> $RMVBL/"$itemName"
+	echo "$message" >> "$RMVBL/$itemName"
 }
 writeToHost(){
 	local itemName="$1"
 	local message="$2"
-	echo "$message" >> $HOST/"$itemName"
+	echo "$message" >> "$HOST/$itemName"
 }
 
 setSyncTime(){
 	local itemName="$1"
 	local time="$2"
-	echo "$itemName $HOSTNAME LASTSYNCDATE $time" >> $STATUSFILE
+	echo "$itemName $HOSTNAME LASTSYNCDATE $time" >> "$STATUSFILE"
 }
 setUTDTrue(){
 	local itemName="$1"
-	echo "$itemName UPTODATEHOSTS $HOSTNAME," >> $STATUSFILE
+	echo "$itemName UPTODATEHOSTS $HOSTNAME," >> "$STATUSFILE"
 }
 addToLocsList(){
 	local itemName="$1"
-	echo "$HOST/$itemName" >> $LOCSLIST
+	echo "$HOST/$itemName" >> "$LOCSLIST"
 }
 
 # NOTATION
@@ -118,9 +121,9 @@ unit001Initialise(){
 }
 unit001Check(){
 	local itemName="unit 001"	
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
-	[[ $(cat $RMVBL/"$itemName"-removed*/*) == "old" ]] || return 3
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName"-removed*/*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	return 0
@@ -139,9 +142,9 @@ unit002Initialise(){
 }
 unit002Check(){
 	local itemName="unit 002"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
-	[[ $(cat $RMVBL/"$itemName"-removed*) == "old" ]] || return 3
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName"-removed*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
@@ -162,9 +165,9 @@ unit003Initialise(){
 }
 unit003Check(){
 	local itemName="unit 003"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
-	[[ $(cat $HOST/"$itemName"-removed*/*) == "old" ]] || return 3
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName"-removed*/*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName.*removable drive.*modified directly"<<<"$holdallOutput" >/dev/null || return 6
@@ -184,9 +187,9 @@ unit004Initialise(){
 }
 unit004Check(){
 	local itemName="unit 004"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
-	[[ $(cat $HOST/"$itemName"-removed*/*) == "old" ]] || return 3
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName"-removed*/*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	return 0
@@ -208,9 +211,9 @@ unit020Initialise(){
 }
 unit020Check(){
 	local itemName="unit 020"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
-	[[ $(cat $HOST/"$itemName"-removed*) == "old" ]] || return 3
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName"-removed*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
@@ -230,9 +233,9 @@ unit021Initialise(){
 }
 unit021Check(){
 	local itemName="unit 021"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
-	[[ $(cat $HOST/"$itemName"-removed*) == "old" ]] || return 3
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName"-removed*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
@@ -253,9 +256,9 @@ unit022Initialise(){
 }
 unit022Check(){
 	local itemName="unit 022"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
-	[[ $(cat $RMVBL/"$itemName"-removed*) == "old" ]] || return 3
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName"-removed*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
@@ -275,9 +278,9 @@ unit023Initialise(){
 }
 unit023Check(){
 	local itemName="unit 023"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
-	[[ $(cat $RMVBL/"$itemName"-removed*) == "old" ]] || return 3
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName"-removed*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
@@ -298,8 +301,8 @@ unit024Initialise(){
 }
 unit024Check(){
 	local itemName="unit 024"
-	[[ $(cat $HOST/"$itemName") == "also new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "also new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
@@ -319,8 +322,8 @@ unit025Initialise(){
 }
 unit025Check(){
 	local itemName="unit 025"
-	[[ $(cat $HOST/"$itemName") == "also new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "also new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
@@ -343,8 +346,8 @@ unit030Initialise(){
 }
 unit030Check(){
 	local itemName="unit 030"
-	[[ $(cat $HOST/"$itemName") == "old" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "old" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
@@ -364,9 +367,9 @@ unit031Initialise(){
 }
 unit031Check(){
 	local itemName="unit 031"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
-	[[ $(cat $HOST/"$itemName"-removed*/*) == "old" ]] || return 3
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName"-removed*/*) == "old" ]] || return 3
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	return 0
@@ -386,8 +389,8 @@ unit032Initialise(){
 }
 unit032Check(){
 	local itemName="unit 032"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
@@ -407,8 +410,8 @@ unit033Initialise(){
 }
 unit033Check(){
 	local itemName="unit 033"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	return 0
@@ -428,8 +431,8 @@ unit034Initialise(){
 }
 unit034Check(){
 	local itemName="unit 034"
-	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "also old" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	return 0
@@ -448,8 +451,8 @@ unit035Initialise(){
 }
 unit035Check(){
 	local itemName="unit 035"
-	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "also old" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
@@ -472,8 +475,8 @@ unit040Initialise(){
 }
 unit040Check(){
 	local itemName="unit 040"
-	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "also old" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
@@ -493,8 +496,8 @@ unit041Initialise(){
 }
 unit041Check(){
 	local itemName="unit 041"
-	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "also old" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
@@ -515,8 +518,8 @@ unit042Initialise(){
 }
 unit042Check(){
 	local itemName="unit 042"
-	[[ $(cat $HOST/"$itemName") == "old" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "old" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
@@ -536,8 +539,8 @@ unit043Initialise(){
 }
 unit043Check(){
 	local itemName="unit 043"
-	[[ $(cat $HOST/"$itemName") == "old" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "old" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
@@ -558,8 +561,8 @@ unit044Initialise(){
 }
 unit044Check(){
 	local itemName="unit 044"
-	[[ $(cat $HOST/"$itemName") == "old" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "old" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
@@ -579,8 +582,8 @@ unit045Initialise(){
 }
 unit045Check(){
 	local itemName="unit 045"
-	[[ $(cat $HOST/"$itemName") == "old" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "new" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "old" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
@@ -601,8 +604,8 @@ unit046Initialise(){
 }
 unit046Check(){
 	local itemName="unit 046"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
@@ -622,8 +625,8 @@ unit047Initialise(){
 }
 unit047Check(){
 	local itemName="unit 047"
-	[[ $(cat $HOST/"$itemName") == "new" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "new" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
@@ -644,8 +647,8 @@ unit048Initialise(){
 }
 unit048Check(){
 	local itemName="unit 048"
-	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "also old" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
@@ -665,8 +668,8 @@ unit049Initialise(){
 }
 unit049Check(){
 	local itemName="unit 049"
-	[[ $(cat $HOST/"$itemName") == "also old" ]] || return 1
-	[[ $(cat $RMVBL/"$itemName") == "old" ]] || return 2
+	[[ $(cat "$HOST/$itemName") == "also old" ]] || return 1
+	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
@@ -688,9 +691,9 @@ unit050Initialise(){
 }
 unit050Check(){
 	local itemName="unit 050"
-	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
-	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(cat "$HOST/$itemName") == "host content" ]] || return 1
 	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGStatusInconsistent"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
@@ -705,10 +708,10 @@ unit051Initialise(){
 }
 unit051Check(){
 	local itemName="unit 051"
-	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(cat "$HOST/$itemName") == "host content" ]] || return 1
 	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGStatusInconsistent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $RMVBL/"$itemName" ]] && return 7
+	[[ -e "$RMVBL/$itemName" ]] && return 7
 	return 0
 }
 # unit052 DESCRIPTION:  NSP, UTD, NHE, RE, should say sync record is missing
@@ -721,10 +724,10 @@ unit052Initialise(){
 }
 unit052Check(){
 	local itemName="unit 052"
-	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGStatusInconsistent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $HOST/"$itemName" ]] && return 7
+	[[ -e "$HOST/$itemName" ]] && return 7
 	return 0
 }
 # unit053 DESCRIPTION:  NSP, UTD, NHE, NRE, should say sync record is missing
@@ -786,10 +789,10 @@ unit070Initialise(){
 }
 unit070Check(){
 	local itemName="unit 070"
-	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(cat "$HOST/$itemName") == "host content" ]] || return 1
 	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGSyncedButRmvblAbsent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $RMVBL/"$itemName" ]] && return 7
+	[[ -e "$RMVBL/$itemName" ]] && return 7
 	return 0
 }
 # unit071 DESCRIPTION: SP, NUTD, HE, NRE, should say rmvbl is missing
@@ -802,10 +805,10 @@ unit071Initialise(){
 }
 unit071Check(){
 	local itemName="unit 071"
-	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(cat "$HOST/$itemName") == "host content" ]] || return 1
 	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
 	grep "$itemName: $WARNINGSyncedButRmvblAbsent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $RMVBL/"$itemName" ]] && return 7
+	[[ -e "$RMVBL/$itemName" ]] && return 7
 	return 0
 }
 # unit072 DESCRIPTION: NSP, NUTD, HE, NRE, should sync host>rmvbl
@@ -817,9 +820,9 @@ unit072Initialise(){
 }
 unit072Check(){
 	local itemName="unit 072"
-	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(cat "$HOST/$itemName") == "host content" ]] || return 1
 	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
-	[[ $(cat $RMVBL/"$itemName") == "host content" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName") == "host content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $TUE ]] || return 5
 	grep "$itemName: first time syncing from host to removable drive"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
@@ -837,10 +840,10 @@ unit080Initialise(){
 }
 unit080Check(){
 	local itemName="unit 080"
-	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGSyncedButHostAbsent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $HOST/"$itemName" ]] && return 7
+	[[ -e "$HOST/$itemName" ]] && return 7
 	return 0
 }
 # unit081 DESCRIPTION: SP, NUTD, NHE, RE, should say host is missing
@@ -853,10 +856,10 @@ unit081Initialise(){
 }
 unit081Check(){
 	local itemName="unit 081"
-	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGSyncedButHostAbsent"<<<"$holdallOutput" >/dev/null || return 6
-	[[ -e $HOST/"$itemName" ]] && return 7
+	[[ -e "$HOST/$itemName" ]] && return 7
 	return 0
 }
 # unit082 DESCRIPTION: NSP, NUTD, NHE, RE, should sync rmvbl>host
@@ -868,9 +871,9 @@ unit082Initialise(){
 }
 unit082Check(){
 	local itemName="unit 082"
-	[[ $(cat $HOST/"$itemName") == "rmvbl content" ]] || return 1
+	[[ $(cat "$HOST/$itemName") == "rmvbl content" ]] || return 1
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
-	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: first time syncing from removable drive to host"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
@@ -888,10 +891,10 @@ unit090Initialise(){
 }
 unit090Check(){
 	local itemName="unit 090"
-	[[ $(cat $HOST/"$itemName") == "rmvbl content" ]] || return 1
+	[[ $(cat "$HOST/$itemName") == "rmvbl content" ]] || return 1
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
-	[[ $(cat $HOST/"$itemName"-removed*) == "host content" ]] || return 3
-	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(cat "$HOST/$itemName"-removed*) == "host content" ]] || return 3
+	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
@@ -907,10 +910,10 @@ unit091Initialise(){
 }
 unit091Check(){
 	local itemName="unit 091"
-	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(cat "$HOST/$itemName") == "host content" ]] || return 1
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
-	[[ $(cat $RMVBL/"$itemName"-removed*) == "rmvbl content" ]] || return 3
-	[[ $(cat $RMVBL/"$itemName") == "host content" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName"-removed*) == "rmvbl content" ]] || return 3
+	[[ $(cat "$RMVBL/$itemName") == "host content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
@@ -926,9 +929,9 @@ unit092Initialise(){
 }
 unit092Check(){
 	local itemName="unit 092"
-	[[ $(cat $HOST/"$itemName") == "host content" ]] || return 1
+	[[ $(cat "$HOST/$itemName") == "host content" ]] || return 1
 	[[ $(getHostTime "$itemName") -eq $TUE ]] || return 4
-	[[ $(cat $RMVBL/"$itemName") == "rmvbl content" ]] || return 2
+	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblTime "$itemName") -eq $TUE ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
 	return 0
@@ -945,18 +948,12 @@ main(){
 	local holdallCustomOptions="$@"
 	if [[ ! -z $holdallCustomOptions ]]; then echo "custom options are being used - the tests are not designed for any custom options!"; fi
 	
+	echo	
+	[[ -d "$HOST" ]] && (echo "deleting $HOST"; rm -Ir "$HOST")
+	mkdir "$HOST"
+	[[ -d "$RMVBL" ]] && (echo "deleting $RMVBL"; rm -Ir "$RMVBL")
+	mkdir "$RMVBL"
 	echo
-	# delete contents of $HOST and $RMVBL
-	echo "deleting $HOST"
-	# ls $HOST
-	rm -Ir $HOST
-	echo "deleting $RMVBL"
-	# ls $RMVBL
-	rm -Ir $RMVBL
-	echo
-	
-	[[ -d $HOST ]] || mkdir $HOST
-	[[ -d $RMVBL ]] || mkdir $RMVBL
 	
 	# get a list of all the unit functions that have been declared above by self-grepping (!)
 	listOfUnits="$(grep -o '^unit[0-9][0-9][0-9][a-zA-Z0-9]*(){\s*$' $PROGNAME | grep -o '^unit[0-9]*' | sort | uniq)"
@@ -974,7 +971,7 @@ main(){
 	# run holdall
 	#readonly holdallOutput="$(bash holdall.sh $holdallCustomOptions -b 1 -a holdAllTesterSimulatedRmvbl)" # store output in GLOBAL VARIABLE!
 	echo "_________________________________________________________________________________"
-	bash holdall.sh $holdallCustomOptions -b 1 -a holdAllTesterSimulatedRmvbl | tee holdallTesterHoldallSavedOutput
+	bash holdall.sh $holdallCustomOptions -b 1 -a "$RMVBL" | tee holdallTesterHoldallSavedOutput
 	echo "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
 	readonly holdallOutput="$(cat holdallTesterHoldallSavedOutput)" # global variable!
 	
@@ -985,9 +982,10 @@ main(){
 	for unit in $listOfUnits
 	do
 		local unitDesc="$(sed -n "s/# $unit DESCRIPTION: \(.*\)/\1/p" $PROGNAME )" # save the description comment for this unit
-		
+		set +e
 		${unit}Check # run this unit's checker
 		unitExitVal=$?
+		set -e
 		[[ $unitExitVal -eq 0 ]] && appendLineToReport "$unit@OK@$unitDesc" || appendLineToReport "$unit@fail state $unitExitVal@$unitDesc" #; failures=$((failures+1)); echo "failures=$failures" )
 	done
 	
