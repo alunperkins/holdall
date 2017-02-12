@@ -109,11 +109,12 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # make merges write to the up-to-date hosts list in an appropriate way - only the merge target is now up-to-date!
 # when drive-modified-directly is recognised, make the up-to-date hosts list reflect it.
 # make automatic mode require "number of backups to keep" setting be at least 1
-# change pretend structure of writeToStatus
 # check if it'll work and move most of "synchronise()" into "syncSourceToDest()", and have main call syncSourceToDest directly.
 #     this should make it easier to give main fine control over writeToStatus re. reflecting DMD etc.
 # analyseLocsList does a check for two items being subfolders of each other. This is just comparing the strings though. It gives a false positive for subfolders if you sync e.g. $HOME/work and $HOME/work-other. Fix this.
 # the way ADDEDLOCATION is used means that only one new location can be added at a time
+# in SAFE MODE if we use pretend mode, then getPretend returns 1, and immediately exits the program. Improve this!
+# TODO in SAFE MODE we must use   getVerbose && echo "something" || true  , but it would be better to have   echoIfVerbose "something"
 # ---------------------------
 
 # these getters aren't encapsulation, they're just for making the code neater elsewhere
@@ -167,19 +168,6 @@ appendLineToSummary(){
 	summary="$summary\n$1"
 	return 0
 }
-diffItems(){ # return diff $1 $2
-	local itemHostLoc="$1"
-	local itemRmvblLoc="$2"
-	local itemVersionsDifference=""
-	if [[ -d "$itemRmvblLoc" ]]
-	then
-		itemVersionsDifference=$(diff --brief --recursive "$itemHostLoc" "$itemRmvblLoc") # this can be a bit slow on large directories....
-	else
-		itemVersionsDifference=$(diff "$itemHostLoc" "$itemRmvblLoc")
-	fi
-	echo "$itemVersionsDifference"
-	return 0
-}
 generateBackupName(){
 	local destLoc="$1"
 	local backupName=$(dirname "$destLoc")/$(basename "$destLoc")-removed-$(date +%F-%H%M)~
@@ -189,6 +177,13 @@ generateBackupName(){
 noRsync(){ # deal with lack of rsync - NOT TESTED =P
 	echo $ERRORMESSAGENoRsync
 	exit 3
+}
+copyErrorExit(){
+        local exitVal=$?
+        echo "There was an error with the copy - exited with status $exitVal"
+        echoToLog "There was an error with the copy - exited with status $exitVal"
+        echo "Aborting $PROGNAME..."
+        exit $exitVal
 }
 
 modTimeOf(){
@@ -572,18 +567,20 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 	local itemSyncTime=$6
 	local itemSyncTimeReadable=$(readableDate $itemSyncTime)
 	
+	local input=""
+	
 	if [[ $AUTOMATIC == "on" ]]
 	then
 		echo -n "Automatic mode on > "
 		if [[ $itemRmvblModTime -gt $itemHostModTime ]]
 		then
 			echo "writing newer $itemRmvblLoc from $itemRmvblModTimeReadable onto $itemHostLoc from $itemHostModTimeReadable"
-			getPermission "want to merge removable >>> to >>> host" && merge "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+			input=$OVRDRMVBLTOHOST
 		else 
 			if [[ $itemRmvblModTime -lt $itemHostModTime ]]
 			then
 				echo "writing newer $itemHostLoc from $itemHostModTimeReadable onto $itemRmvblLoc from $itemRmvblModTimeReadable"
-				getPermission "want to merge host >>> to >>> removable" && merge "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+				input=$OVRDHOSTTORMVBL
 			else # then mod times must be equal
 				echo "but both versions have the same modification time. Taking no action."
 			fi
@@ -597,8 +594,8 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 			echo "   using diff --side-by-side --suppress-common-lines"
 		fi
 		echoTitle " contents comparison "
-		diff -y <(echo "Host (ls folder contents/file contents) on left") <(echo "Removable drive (ls folder contents/file contents) on right")
-		diff -y <(echo "Host mod time $itemHostModTimeReadable") <(echo "Removable drive mod time $itemRmvblModTimeReadable")
+		diff -y <(echo "Host (ls folder contents/file contents) on left") <(echo "Removable drive (ls folder contents/file contents) on right") || true
+		diff -y <(echo "Host mod time $itemHostModTimeReadable") <(echo "Removable drive mod time $itemRmvblModTimeReadable") || true
 		# (just using diff -y here so it lines up with listing below)
 		echoTitle ""
 		if [[ -d "$itemRmvblLoc" ]] # if a directory: show diff of recursive dir contents and list files that differ
@@ -606,9 +603,9 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 			# use a sed to remove the unwanted top-level directory address, leaving just the part of the file address relative to $itemHostLoc($itemRmvblLoc)
 			local unsyncedModificationsHost=$(sed "s:^$itemHostLoc/::" <(find $itemHostLoc -newermt @$itemSyncTime | sort)) # WATCH OUT for hard/soft quoting in sed here!
 			local unsyncedModificationsRmvbl=$(sed "s:^$itemRmvblLoc/::" <(find $itemRmvblLoc -newermt @$itemSyncTime | sort)) # WATCH OUT for hard/soft quoting in sed here!
-			diff -y <(echo -e "$unsyncedModificationsHost") <(echo -e "$unsyncedModificationsRmvbl")
+			diff -y <(echo -e "$unsyncedModificationsHost") <(echo -e "$unsyncedModificationsRmvbl") || true
 		else # if a file: show diff of the two files
-			diff -y --suppress-common-lines "$itemHostLoc" "$itemRmvblLoc"
+			diff -y --suppress-common-lines "$itemHostLoc" "$itemRmvblLoc" || true
 		fi
 		echoTitle " please select "
 		echo "   (blank if no difference)"
@@ -618,27 +615,36 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 		echo "   $OVRDRMVBLTOHOST to sync the removable drive copy onto the host copy"
 		echo "   $OVRDMERGEHOSTTORMVBL to merge the host copy into the removable drive copy"
 		echo "   $OVRDMERGERMVBLTOHOST to merge the removable drive copy into the host copy"
-		local input=""
 		read -p '   > ' input </dev/tty
-		case $input in
-			$OVRDHOSTTORMVBL)
-				getPermission "want to sync host >>> to >>> removable" && synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
-				;;
-			$OVRDRMVBLTOHOST)
-				getPermission "want to sync removable >>> to >>> host" && synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
-				;;
-			$OVRDMERGEHOSTTORMVBL)
-				getPermission "want to merge host >>> to >>> removable" && merge "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
-				;;
-			$OVRDMERGERMVBLTOHOST)
-				getPermission "want to merge removable >>> to >>> host" && merge "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
-				;;
-			*)
-				appendLineToSummary "$itemName $SUMMARYTABLEskip"
-				echo "$itemName: taking no action"
-				;;
-		esac
-	fi # endif [ automatic mode ]
+        fi # endif [ automatic mode ]
+	case $input in
+		$OVRDHOSTTORMVBL)
+			if ! getPermission "want to sync host >>> to >>> removable"; then return 1; fi
+			synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+			writeToStatusFileLASTSYNCDATEnow "$itemName"
+			writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
+			;;
+		$OVRDRMVBLTOHOST)
+			if ! getPermission "want to sync removable >>> to >>> host"; then return 1; fi
+			synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+			writeToStatusFileLASTSYNCDATEnow "$itemName"
+			writeToStatusFileUPTODATEHOSTSappendThisHost "$itemName"
+			;;
+		$OVRDMERGEHOSTTORMVBL)
+			if ! getPermission "want to merge host >>> to >>> removable"; then return 1; fi
+			merge "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+			writeToStatusFileUPTODATEHOSTSassignEmpty "$itemName"
+			;;
+		$OVRDMERGERMVBLTOHOST)
+			if ! getPermission "want to merge removable >>> to >>> host"; then return 1; fi
+			merge "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+			# do not write to status file, neither re. sync time nor re. which hosts are up-to-date
+			;;
+		*)
+			appendLineToSummary "$itemName $SUMMARYTABLEskip"
+			echo "$itemName: taking no action"
+			;;
+	esac
 	return 0
 }
 
@@ -773,25 +779,18 @@ synchronise(){ # caller should have ALREADY obtained permission with getPermissi
 		$DIRECTIONHOSTTORMVBL)
 			echo "$itemName: $MESSAGESyncingHostToRmvbl"
 			syncSourceToDest "$itemHostLoc" "$itemRmvblLoc"
-			local copyExitVal=$?
-			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $syncDirection; fi
 			echoToLog "$itemName, host synced to removable drive"
-			echoToLog "$itemName, $itemHostLoc, synced to, $itemRmvblLoc, copy exit status=$copyExitVal"
-			echo "DEBUG echoToLog exited with " $?
-			if [[ $copyExitVal -eq 0 ]]; then removeOldBackups "$itemRmvblLoc"; fi
-			
-			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvblError$copyExitVal"; fi
+			echoToLog "$itemName, $itemHostLoc, synced to, $itemRmvblLoc"
+			removeOldBackups "$itemRmvblLoc"
+			appendLineToSummary "$itemName $SUMMARYTABLEsyncHostToRmvbl"
 			;;
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGESyncingRmvblToHost"
 			syncSourceToDest "$itemRmvblLoc" "$itemHostLoc"
-			local copyExitVal=$?
-			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $syncDirection; fi
 			echoToLog "$itemName, removable drive synced to host"
-			echoToLog "$itemName, $itemRmvblLoc, synced to, $itemHostLoc, copy exit status=$copyExitVal" 
-			if [[ $copyExitVal -eq 0 ]]; then removeOldBackups "$itemHostLoc"; fi
-			
-			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHost"; else appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHostError$copyExitVal"; fi
+			echoToLog "$itemName, $itemRmvblLoc, synced to, $itemHostLoc"
+			removeOldBackups "$itemHostLoc"
+			appendLineToSummary "$itemName $SUMMARYTABLEsyncRmvblToHost"
 			;;
 		*)
 			echo "synchronise was passed invalid argument $syncDirection, there is a hard-coded fault"
@@ -799,21 +798,20 @@ synchronise(){ # caller should have ALREADY obtained permission with getPermissi
 			exit 101
 			;;
 	esac
-	return $copyExitVal
+	return 0
 }
 
 syncSourceToDest(){
 	# has two structures for "getPretend" - one style prevents executing commands, the other style is always executing rsync but passing the "Pretend" setting forward into rsync --dry-run.
 	local sourceLoc="$1"
 	local destLoc="$2"
-	local copyExitVal=""
 	
 	# safety exit for people testing changes to the code - once while I was testing new code a broken command caused rsync to nearly delete work (retrieved the work from the --backup-dir folder though)
 	if [[ (-z $sourceLoc) || (-z $destLoc) ]]; then echo "UNKNOWN ERROR: syncSourceToDest was passed a blank argument. Exiting to prevent data loss"; exit 104; fi
 	
 	# set the options string for rsync
 	local shortOpts="-rtgop" # short options always used
-	getVerbose && shortOpts="$shortOpts"v # if verbose then make rsync verbose too
+	getVerbose && shortOpts="$shortOpts"v  || true # if verbose then make rsync verbose too
 	local longOpts="--delete" # long options always used
 	if [[ $NOOFBACKUPSTOKEEP -gt 0 ]]
 	then 
@@ -832,13 +830,9 @@ syncSourceToDest(){
 	then
 		if [[ $NOOFBACKUPSTOKEEP -gt 0 ]]
 		then
-			getDebug && echo "DEBUG: calling rsync $shortOpts $longOpts $longOptBackup $sourceLoc/ $destLoc"
-			rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc"/ "$destLoc"
-			copyExitVal=$?
+			rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc"/ "$destLoc" || copyErrorExit
 		else
-			getDebug && echo "DEBUG: calling rsync $shortOpts $longOpts $sourceLoc/ $destLoc"
-			rsync $shortOpts $longOpts "$sourceLoc"/ "$destLoc"
-			copyExitVal=$?
+			rsync $shortOpts $longOpts "$sourceLoc"/ "$destLoc" || copyErrorExit
 		fi
 		
 		# after this routine completes, we go back down the stack to the calling routine, etc., 
@@ -853,74 +847,42 @@ syncSourceToDest(){
 		
 		# but this leaves the destination's top-level dir modification time to be 
 		# NOW instead of that of the source, so sync this final datum before finishing
-		getPretend || ([[ $copyExitVal == $TRUE ]] && touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc") # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
+		getPretend || touch -m -d "$(date -r "$sourceLoc" +%c)" "$destLoc" # WHOAH. BE CAREFUL WITH QUOTES - but this works OK apparently
 		
 	else # if it is a file
 		if [[ $NOOFBACKUPSTOKEEP -gt 0 ]]
 		then
-			getDebug && echo "DEBUG: calling rsync $shortOpts $longOpts $longOptBackup $sourceLoc $destLoc"
-			rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc" "$destLoc"
-			copyExitVal=$?
+			rsync $shortOpts $longOpts "$longOptBackup" "$sourceLoc" "$destLoc" || copyErrorExit
 		else
-			getDebug && echo "DEBUG: calling rsync $shortOpts $longOpts $sourceLoc $destLoc"
-			rsync $shortOpts $longOpts "$sourceLoc" "$destLoc"
-			copyExitVal=$?
+			rsync $shortOpts $longOpts "$sourceLoc" "$destLoc" || copyErrorExit
 		fi
 	fi # END rsync FILE/FOLDER BRANCHING BLOCK
 	
-	getVerbose && echo "copy complete"
-	
-	if [[ $copyExitVal -ne 0 ]]; then echo "WARNING: copy command returned error - exit status $copyExitVal - assuming complete failure"; fi
-	return $copyExitVal
+	getVerbose && echo "copy complete" || true
 }
 removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not with strange exceptional cases
 	local locationStem="$1"
 	
-	getVerbose && echo checking for expired backups
-	local existingBackupsSorted="$(ls -d "$locationStem"-removed* | grep '^'$locationStem'-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$' | sort)" # this can return an empty string
-	getVerbose && echo -e "backups existing:\n$existingBackupsSorted"
+	getVerbose && echo "checking for expired backups" || true
+	local existingBackupsSorted="$(ls -d "$locationStem"-removed* | grep '^'"$locationStem"'-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$' | sort)" # this can return an empty string
+	getVerbose && echo -e "backups existing:\n$existingBackupsSorted" || true
 	local oldBackups="$(head --lines=-$NOOFBACKUPSTOKEEP <<<"$existingBackupsSorted")"
 	
 	if [[ -z $oldBackups ]]; then return 0; fi # quit if there are no old backups
 	
 	local rmOptsString="-r"
-	getVerbose && rmOptsString="$rmOptsString"v # it's pretty clear that $rmOptsString contains either "-r" or "-rv", robustly
+	getVerbose && rmOptsString="$rmOptsString"v || true # it's pretty clear that $rmOptsString contains either "-r" or "-rv", robustly
 	#ls -1d "$locationStem"-removed* | grep '^'$locationStem'-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$' | sort | head --lines=-$NOOFBACKUPSTOKEEP | while read oldBackupName # loop over expired backups
 	echo "$oldBackups" | while read oldBackupName # loop over expired backups
 	do
-		getVerbose && echo "removing old backup $oldBackupName"
+		getVerbose && echo "removing old backup $oldBackupName" || true
 		# for robust safety of the rm command, let's make sure the variable $oldBackupName contains "-removed-" followed by a date&time and then a "~", in the format -removed-YYYY-MM-DD-HHMM~ , before allowing the rm command to see it
 		[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] &&  getPermission "want to remove old backup $oldBackupName" && (getPretend || rm $rmOptsString "$oldBackupName")
 		[[ "$oldBackupName" =~ ^[^*]*-removed-2[0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9]~$ ]] || echo "variable oldBackupName containing path to rm contained an invalid value '$oldBackupName'. Did not rm. Please report a bug to a maintainer."
 	done
 	return 0
 }
-writeToStatus(){
-	local itemName="$1"
-	local syncDirection="$2"
-		
-	# edit the date line to set date of last sync to current time 
-	writeToStatusFileLASTSYNCDATEnow "$itemName"
-	
-	# update the hosts line
-	# this should be made into a CASE statement
-	if [[ $syncDirection == $DIRECTIONHOSTTORMVBL ]]
-	then
-		# then removable drive just accepted a change from this host, delete all other hosts from up-to-date list
-		writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
-	else
-		if [[ $syncDirection == $DIRECTIONRMVBLTOHOST ]]
-		then
-			# then this host just accepted a change from removable drive, it should be on the up-to-date hosts list
-			writeToStatusFileUPTODATEHOSTSappendThisHost "$itemName"
-		else
-			echo "writeToStatus was passed invalid argument $syncDirection, there is a hard-coded fault"
-			exit 102
-		fi
-	fi
-	getVerbose && echo "$itemName: status updated."
-	return 0
-}
+
 statusFileEnsureExistenceOfDateLine(){
 	local itemName="$1"
 	grep -q "^$itemName $HOSTNAME LASTSYNCDATE .*" "$SYNCSTATUSFILE" && local dateLineExists=$TRUE || local dateLineExists=$FALSE
@@ -975,23 +937,16 @@ merge(){
 		$DIRECTIONHOSTTORMVBL)
 			echo "$itemName: $MESSAGEMergingHostToRmvbl"
 			mergeSourceToDest "$itemHostLoc" "$itemRmvblLoc"
-			local copyExitVal=$?
-			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
-			echo "DEBUG writeToStatus exited with "$?
 			echoToLog "$itemName, host merged to removable drive"
-			echoToLog "$itemName, $itemHostLoc, merged to, $itemRmvblLoc, copy exit status=$copyExitVal"
-			
-			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvbl"; else appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvblError$copyExitVal"; fi
+			echoToLog "$itemName, $itemHostLoc, merged to, $itemRmvblLoc"
+			appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvbl"
 			;;
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGEMergingRmvblToHost"
 			mergeSourceToDest "$itemRmvblLoc" "$itemHostLoc"
-			local copyExitVal=$?
-			if [[ $copyExitVal -eq 0 ]]; then writeToStatus "$itemName" $mergeDirection; fi
 			echoToLog "$itemName, removable drive merged to host"
-			echoToLog "$itemName, $itemRmvblLoc, merged to, $itemHostLoc, copy exit status=$copyExitVal"
-			
-			if [[ $copyExitVal -eq 0 ]]; then appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHost"; else appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHostError$copyExitVal"; fi
+			echoToLog "$itemName, $itemRmvblLoc, merged to, $itemHostLoc"
+			appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHost"
 			;;
 		*)
 			echo merge was passed invalid argument $mergeDirection, there is a hard-coded fault
@@ -999,17 +954,16 @@ merge(){
 			exit 101
 			;;
 	esac
-	return $copyExitVal
+	return 0
 }
 mergeSourceToDest(){
 	# has two structures for "getPretend" - one style prevents executing commands, the other style is always executing rsync but passing the "Pretend" setting forward into rsync --dry-run.
 	local sourceLoc="$1"
 	local destLoc="$2"
-	local copyExitVal=""
 		
 	# set the options string for rsync
 	local shortOpts="-rtgopb" # short options always used - note uses u (update) and b (backup)
-	getVerbose && shortOpts="$shortOpts"v # if verbose then make rsync verbose too
+	getVerbose && shortOpts="$shortOpts"v  || true # if verbose then make rsync verbose too
 	local longOpts="--suffix=-removed-$(date +%F-%H%M)~"
 	getPretend && longOpts="$longOpts --dry-run" # if pretending make rsync pretend too    # note: rsync --dry-run does not always _entirely_ avoid writing to disk...?
 	
@@ -1017,21 +971,18 @@ mergeSourceToDest(){
 	# for proper behaviour with directories need a slash after the source, but with files this syntax would be invalid
 	if [[ -d "$sourceLoc" ]] # if it is a directory
 	then
-		rsync $shortOpts $longOpts "$sourceLoc"/ "$destLoc"
-		copyExitVal=$?
+		rsync $shortOpts $longOpts "$sourceLoc"/ "$destLoc" || copyErrorExit
 		
 		# but the destination's top-level dir modification time should definitely be NOW
 		getPretend || touch -m "$destLoc"
 		
 	else # if it is a file
-		rsync $shortOpts $longOpts "$sourceLoc" "$destLoc"
-		copyExitVal=$?
+		rsync $shortOpts $longOpts "$sourceLoc" "$destLoc" || copyErrorExit
 	fi # END rsync FILE/FOLDER BRANCHING BLOCK
 	
 	getVerbose && echo "copy complete"
 	
-	if [[ $copyExitVal -ne 0 ]]; then echo "WARNING: copy command returned error - exit status $copyExitVal - assuming complete failure"; fi
-	return $copyExitVal
+	return 0
 }
 deleteItem(){
 	local destLoc="$1"
@@ -1044,11 +995,11 @@ deleteItem(){
 		[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] \
 			&& getPermission "want to move item $destLoc to $backupName" \
 			&& (getPretend || \
-				if [[ $VERBOSE == "on" ]]; then mv -v "$destLoc" "$backupName" else mv "$destLoc" "$backupName"; fi)
+				if [[ $VERBOSE == "on" ]]; then mv -v "$destLoc" "$backupName"; else mv "$destLoc" "$backupName"; fi)
 	else
 		# if not using backups then "delete" means rm
 		local optsString="-r"
-		getVerbose && optsString="$optsString"v # it's pretty clear that $optsString contains either "-r" or "-rv", robustly
+		getVerbose && optsString="$optsString"v  || true # it's pretty clear that $optsString contains either "-r" or "-rv", robustly
 		[[ "$destLoc" =~ ^[^*][^*][^*]*$ ]] \
 			&& getPermission "want to delete item $destLoc" \
 			&& (getPretend || rm -i $optsString "$destLoc") # remove this "-i" option?
@@ -1153,14 +1104,14 @@ main(){
 		xdgOpenLocsListDialogAndExit
 		exit 0
 	fi
-	getVerbose && echo found $noOfEntriesInLocsList entries in locations-list file
+	getVerbose && echo "found $noOfEntriesInLocsList entries in locations-list file" || true
 	
 	# check the status file is ready
 	readonly SYNCSTATUSFILE="$RMVBLDIR/syncStatus"
 	if [[ ! -e "$SYNCSTATUSFILE" ]]; then noSyncStatusFileDialog; fi # noSyncStatusFileDialog will create a syncStatusFile or exit
 	if [[ ! -r "$SYNCSTATUSFILE" || ! -w "$SYNCSTATUSFILE" ]]; then echo $ERRORMESSAGEPermissionsSyncStatusFile; exit 10; fi
 	
-	getVerbose && echo leaving $NOOFBACKUPSTOKEEP 'backup(s) when writing'
+	getVerbose && echo "leaving $NOOFBACKUPSTOKEEP backup(s) when writing" || true
 	
 	# begin iterating over the locations listed in LOCSLIST
 	# command "while IFS='|' read ..."   stores line contents thus: (first thing on a line) > itemHostLoc [delimeter='|'] (the rest of the line) > itemAlias
@@ -1197,10 +1148,10 @@ main(){
 		
 		if [[ $itemSyncedPreviously == $TRUE ]]
 		then
-			getVerbose && echo status file: synced previously on = $(readableDate $itemSyncTime)
+			getVerbose && echo "status file: synced previously on = $(readableDate $itemSyncTime)" || true
 			echoToLog "$itemName, last synced on, $(readableDate $itemSyncTime)"
 		else
-			getVerbose && echo status file: first-time sync
+			getVerbose && echo "status file: first-time sync" || true
 			echoToLog "$itemName, first-time sync"
 		fi
 		
@@ -1208,10 +1159,10 @@ main(){
 		grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" "$SYNCSTATUSFILE" && local hostUpToDateWithItem=$TRUE || local hostUpToDateWithItem=$FALSE
 		if [[ $hostUpToDateWithItem == $TRUE ]]
 		then
-			getVerbose && echo status file: this host has latest changes
+			getVerbose && echo "status file: this host has latest changes" || true
 			echoToLog "$itemName, this host has latest changes"
 		else
-			getVerbose && echo status file: this host does not have latest changes
+			getVerbose && echo "status file: this host does not have latest changes" || true
 			echoToLog "$itemName, this host does not have latest changes"
 		fi
 		
@@ -1227,7 +1178,7 @@ main(){
 			appendLineToSummary "$itemName $SUMMARYTABLEerror"
 			continue
 		fi
-		# so below here can assume UTD and !SP is excluded
+		# so below here can assume UTD && !SP is excluded
 		
 		# ------ Step 3: retrieve data from this item from disk ------
 		
@@ -1266,9 +1217,15 @@ main(){
 				# BRANCH END
 				# then sync Host onto the Rmvbl
 				echo "$itemName: first time syncing from host to removable drive"
-				getPermission "want to sync host >>> to >>> removable" \
-					&& synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc" \
-					|| appendLineToSummary "$itemName $SUMMARYTABLEdidNotAllowFirstTimeSyncToRmvbl"
+				if getPermission "want to sync host >>> to >>> removable"
+				then
+                                        synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+                                        writeToStatusFileLASTSYNCDATEnow "$itemName"
+                                        writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
+                                else
+                                        appendLineToSummary "$itemName $SUMMARYTABLEdidNotAllowFirstTimeSyncToRmvbl"
+                                        continue
+                                fi
 			else 
 				# BRANCH END
 				# then we have an error, offer override
@@ -1289,16 +1246,21 @@ main(){
 				# BRANCH END
 				# then sync Rmvbl onto Host 
 				echo "$itemName: first time syncing from removable drive to host"
-				getPermission "want to sync removable >>> to >>> host" \
-					&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" \
-					|| appendLineToSummary "$itemName $SUMMARYTABLEdidNotAllowFirstTimeSyncToHost"
+                                if getPermission "want to sync removable >>> to >>> host" 
+				then
+                                        synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" # in safe mode, exits if synchronise returns false?
+                                        writeToStatusFileLASTSYNCDATEnow "$itemName"
+                                        writeToStatusFileUPTODATEHOSTSappendThisHost "$itemName"
+                                else
+                                        appendLineToSummary "$itemName $SUMMARYTABLEdidNotAllowFirstTimeSyncToHost"
+                                        continue
+                                fi
 			else 
 				# BRANCH END
 				# then we have an error, offer override
 				echo "$itemName: $WARNINGSyncedButHostAbsent"
 				echoToLog "$itemName, $WARNINGSyncedButHostAbsent"
 				appendLineToSummary "$itemName $SUMMARYTABLEerror"
-				#unexpectedAbsenceDialog "$itemName" "$itemHostLoc" "$itemRmvblLoc" "host"
 				hostMissingDialog "$itemName" "$itemRmvblLoc" "$itemHostLoc" "$itemHostLocRaw"
 			fi
 			continue
@@ -1322,8 +1284,8 @@ main(){
 			
 			itemRmvblModTime=$(modTimeOf "$itemRmvblLoc")
 			itemHostModTime=$(modTimeOf "$itemHostLoc")
-			getVerbose && echo from disk: mod time of version on host: $(readableDate $itemHostModTime)
-			getVerbose && echo from disk: mod time of version on removable drive: $(readableDate $itemRmvblModTime)
+			getVerbose && echo "from disk: mod time of version on host: $(readableDate $itemHostModTime)" || true
+			getVerbose && echo "from disk: mod time of version on removable drive: $(readableDate $itemRmvblModTime)" || true
 			echoToLog "$itemName, host  mod time, $(readableDate $itemHostModTime)"
 			echoToLog "$itemName, rmvbl mod time, $(readableDate $itemRmvblModTime)"
 			
@@ -1352,18 +1314,28 @@ main(){
 					echoToLog "$itemName, removable drive version was modified directly - change appeared not from a host"
 					# but that's fine, proceed.
 					# sync removable drive onto host
-					getPermission "want to sync removable >>> to >>> host" \
-						&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" \
-						|| chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+                                        if getPermission "want to sync removable >>> to >>> host"
+                                        then
+                                                synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+                                                writeToStatusFileLASTSYNCDATEnow "$itemName"
+                                                writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
+                                        else
+                                                chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+                                        fi
 				else
 					# BRANCH END
 					# then have history: modded here > synced to removable drive > removable drive accepted change from elsewhere (possibly directly instead of from a host)
-					getVerbose && echo "removable drive has been modified since last sync (and host hasn't)"
+					getVerbose && echo "removable drive has been modified since last sync (and host hasn't)" || true
 					# so update this host with that change
 					# sync removable drive onto host
-					getPermission "want to sync removable >>> to >>> host" \
-						&& synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc" \
-						|| chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+                                        if getPermission "want to sync removable >>> to >>> host"
+                                        then
+                                                synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+                                                writeToStatusFileLASTSYNCDATEnow "$itemName"
+                                                writeToStatusFileUPTODATEHOSTSappendThisHost "$itemName"
+                                        else
+                                                chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+                                        fi
 				fi
 				continue
 			fi
@@ -1376,9 +1348,14 @@ main(){
 					getVerbose && echo "host has been modified since last sync (and removable drive hasn't)"
 					# so update the removable drive with the changes made on this host
 					# sync host to removable drive
-					getPermission "want to sync host >>> to >>> removable" \
-						&& synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc" \
-						|| chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+                                        if getPermission "want to sync host >>> to >>> removable"
+                                        then
+                                                synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+                                                writeToStatusFileLASTSYNCDATEnow "$itemName"
+                                                writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
+                                        else
+                                                chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+                                        fi
 				else
 					# BRANCH END
 					# item has been forked
@@ -1486,7 +1463,7 @@ main(){
 	echo " ($(date))"
 		
 	
-	getVerbose && echoTitle " end of script "
+	getVerbose && echoTitle " end of script " || true
 	return 0
 }
 
