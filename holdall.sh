@@ -130,7 +130,7 @@ getVerbose(){
 }
 getPermission(){
 	# if we're not in interactive mode then simply return true
-	if [[ $INTERACTIVEMODE == "off" ]]; then return 0; fi 
+	if [[ $INTERACTIVEMODE != "on" ]]; then return 0; fi 
 	# else we are in interactive mode so ask for permission
 	local prompt="$1"
 	echo "    $prompt"
@@ -1037,8 +1037,18 @@ readOptions(){
 		esac
 	done
 	
-	if [[ $AUTOMATICFLAGPRESENT == "yes" && $INTERACTIVEMODE == "off" ]]; then readonly AUTOMATIC="on"; fi
-	if [[ $AUTOMATICFLAGPRESENT == "yes" && $INTERACTIVEMODE == "on" ]]; then echo "cannot set automatic mode and interactive mode at once - interactive mode taking precedence."; fi
+	if [[ $AUTOMATICFLAGPRESENT == "yes" && $INTERACTIVEMODE != "on" ]]
+	then 
+		readonly AUTOMATIC="on"
+	else
+		readonly AUTOMATIC="off"
+	fi
+
+	if [[ $AUTOMATIC == "on" && $INTERACTIVEMODE == "on" ]]
+	then 
+		echo "cannot set automatic mode and interactive mode at once"
+		exit 1
+	fi
 	
 	# check that number of backups to keep is a positive integer === a string containing only digits
 	if [[ "$NOOFBACKUPSTOKEEP" =~ .*[^[:digit:]].* ]]
@@ -1046,6 +1056,13 @@ readOptions(){
 		echo "invalid number given to option '-b' : '$NOOFBACKUPSTOKEEP' "
 		exit 1
 	fi
+
+	if [[ "$NOOFBACKUPSTOKEEP" -lt 1 && $AUTOMATICFLAGPRESENT == "yes" ]]
+	then
+		echo "cannot set automatic mode and zero backups"
+		exit 1
+	fi
+	
 	return 0
 }
 
