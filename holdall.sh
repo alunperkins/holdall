@@ -16,6 +16,11 @@ set -o pipefail
 # If 'false && true' is the LAST command in a function then the function's return value is false and the program exits!
 # This is confusing because a command 'false && true' at OTHER positions in the code would NOT result in an exit!
 
+trap 'finally' 0 # fun function "finally" if any command causes an exit (which, in strict mode, many commands might do)
+finally(){
+        echo "TRAP: command $BASH_COMMAND caused an exit. Its exit status was $?";
+}
+
 readonly TRUE=TRUE # can be any unique string
 readonly FALSE=FALSE # can be any unique string
 
