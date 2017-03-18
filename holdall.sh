@@ -944,6 +944,7 @@ merge(){
 		$DIRECTIONHOSTTORMVBL)
 			echo "$itemName: $MESSAGEMergingHostToRmvbl"
 			mergeSourceToDest "$itemHostLoc" "$itemRmvblLoc"
+			echo "$itemName: merged to rmvbl, but host not changed, so note that rmvbl and host versions now DIFFER! Run again to fix."
 			echoToLog "$itemName, host merged to removable drive"
 			echoToLog "$itemName, $itemHostLoc, merged to, $itemRmvblLoc"
 			appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvbl"
@@ -952,13 +953,14 @@ merge(){
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGEMergingRmvblToHost"
 			mergeSourceToDest "$itemRmvblLoc" "$itemHostLoc"
+			echo "$itemName: merged to host, but rmvbl not changed, so note that rmvbl and host versions now DIFFER! Run again to fix."
 			echoToLog "$itemName, removable drive merged to host"
 			echoToLog "$itemName, $itemRmvblLoc, merged to, $itemHostLoc"
 			appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHost"
 			writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
 			;;
 		*)
-			echo merge was passed invalid argument $mergeDirection, there is a hard-coded fault
+			echo "merge was passed invalid argument $mergeDirection, there is a hard-coded fault"
 			echo "(merge expects $DIRECTIONRMVBLTOHOST or $DIRECTIONHOSTTORMVBL)"
 			exit 101
 			;;
