@@ -129,6 +129,27 @@ addToLocsList(){
 	echo "$HOST/$itemName" >> "$LOCSLIST"
 }
 
+checkRmvblTopLevelDirTimeIsNotRecent(){
+        local itemName="$1"
+	local rmvblDirTime=$(date -r "$RMVBL/$itemName" +%s)
+	[[ $rmvblDirTime -lt $SAT ]] && return 0 || return 1
+}
+checkRmvblTopLevelDirTimeIsRecent(){
+	local itemName="$1"
+	local rmvblDirTime=$(date -r "$RMVBL/$itemName" +%s)
+	[[ $rmvblDirTime -gt $SAT ]] && return 0 || return 1
+}
+checkHostTopLevelDirTimeIsNotRecent(){
+        local itemName="$1"
+	local hostDirTime=$(date -r "$HOST/$itemName" +%s)
+	[[ $hostDirTime -lt $SAT ]] && return 0 || return 1
+}
+checkHostTopLevelDirTimeIsRecent(){
+	local itemName="$1"
+	local hostDirTime=$(date -r "$HOST/$itemName" +%s)
+	[[ $hostDirTime -gt $SAT ]] && return 0 || return 1
+}
+
 checkLastSyncTimeIsNotRecent(){
 	local itemName="$1"
 	local lastSyncTime=$(sed -n "s/$itemName $HOSTNAME LASTSYNCDATE \([0-9]*\)/\1/p" "$STATUSFILE")
@@ -253,6 +274,7 @@ unit003Check(){
 	[[ $(cat "$RMVBL/$itemName/"*-removed*) == "old" ]] || return 3
 	[[ $(getHostDirContentsTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblDirContentsTime "$itemName") -eq $FRI ]] || return 5
+	checkRmvblTopLevelDirTimeIsRecent "$itemName" || return 12
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisNoHosts "$itemName" || return 11
@@ -352,6 +374,7 @@ unit021Check(){
 	[[ $(cat "$RMVBL/$itemName/file01") == "new" ]] || return 2
 	[[ $(cat "$HOST/$itemName/"*-removed*) == "old" ]] || return 3
 	[[ $(getHostDirContentsTime "$itemName") -eq $FRI ]] || return 4
+	checkHostTopLevelDirTimeIsRecent "$itemName" || return 12
 	[[ $(getRmvblDirContentsTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	checkLastSyncTimeIsNotRecent "$itemName" || return 10
@@ -401,6 +424,7 @@ unit023Check(){
 	[[ $(cat "$RMVBL/$itemName/file01") == "new" ]] || return 2
 	[[ $(cat "$HOST/$itemName/"*-removed*) == "old" ]] || return 3
 	[[ $(getHostDirContentsTime "$itemName") -eq $FRI ]] || return 4
+	checkHostTopLevelDirTimeIsRecent "$itemName" || return 12
 	[[ $(getRmvblDirContentsTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	checkLastSyncTimeIsNotRecent "$itemName" || return 10
@@ -451,6 +475,7 @@ unit025Check(){
 	[[ $(cat "$RMVBL/$itemName/"*-removed*) == "old" ]] || return 3
 	[[ $(getHostDirContentsTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblDirContentsTime "$itemName") -eq $FRI ]] || return 5
+	checkRmvblTopLevelDirTimeIsRecent "$itemName" || return 12
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisNoHosts "$itemName" || return 11
@@ -500,6 +525,7 @@ unit027Check(){
 	[[ $(cat "$RMVBL/$itemName/"*-removed*) == "old" ]] || return 3
 	[[ $(getHostDirContentsTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblDirContentsTime "$itemName") -eq $FRI ]] || return 5
+	checkRmvblTopLevelDirTimeIsRecent "$itemName" || return 12
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
 	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisNoHosts "$itemName" || return 11
@@ -1212,6 +1238,7 @@ unit091Check(){
 	local itemName="unit 091"
 	[[ $(cat "$HOST/$itemName/file01") == "rmvbl content" ]] || return 1
 	[[ $(getHostDirContentsTime "$itemName") -eq $WED ]] || return 4
+	checkHostTopLevelDirTimeIsRecent "$itemName" || return 12
 	[[ $(cat "$HOST/$itemName/"*-removed*) == "host content" ]] || return 3
 	[[ $(cat "$RMVBL/$itemName/file01") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblDirContentsTime "$itemName") -eq $WED ]] || return 5
@@ -1257,6 +1284,7 @@ unit094Check(){
 	[[ $(cat "$RMVBL/$itemName/"*-removed*) == "rmvbl content" ]] || return 3
 	[[ $(cat "$RMVBL/$itemName/file01") == "host content" ]] || return 2
 	[[ $(getRmvblDirContentsTime "$itemName") -eq $WED ]] || return 5
+	checkRmvblTopLevelDirTimeIsRecent "$itemName" || return 12
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
 	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisNoHosts "$itemName" || return 11
