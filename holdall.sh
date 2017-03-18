@@ -103,7 +103,6 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 
 # ---------- TO DO ----------
 # implement checking if an itemHostLoc is a subfolder of itemRmvblLoc, or vice-versa
-# need to review behaviour re. sync vs. merge conflicted files (as opposed to folders) - may not be behaving in a transparent way
 # add a status mode where it prints the sync status of every item on the removable drive re. hosts, etc.
 # add to scanLocsList a check for items on the rmvbl that are not synced with any hosts, offer to delete them
 # change the -s option's function to READLINK of the "loc|alias" or "loc" text given, because it's convenient to type a relative path, but the path entered should be an absolute path
@@ -112,9 +111,6 @@ readonly LOTSOFDASHES="---------------------------------------------------------
 # move these lines INSIDE chooseVersionDialog : echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
 # consider redirect input using units, instead of getting all user input from /dev/tty, so that person running program can still choose to send it input from somewhere else should they want to, like any other program
 # in fact, generally review the programs use of stdout and stderr !
-# merges create a mod time that is the same as the sync time - this may be confusing - write something that deals with it
-# make merges write a timestamp to destination that is ten seconds after the copy time (i.e. ten seconds in the future), so that a merge is correctly recognised as a modification
-# make automatic mode require "number of backups to keep" setting be at least 1
 # analyseLocsList does a check for two items being subfolders of each other. This is just comparing the strings though. It gives a false positive for subfolders if you sync e.g. $HOME/work and $HOME/work-other. Fix this.
 # the way ADDEDLOCATION is used means that only one new location can be added at a time
 # SED DELIMETERS: test if it can handle paths with characters in them like : when we are using those as delimeters...?!
