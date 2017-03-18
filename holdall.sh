@@ -851,6 +851,7 @@ syncSourceToDest(){
 		# the code needs to be improved!
 		# ideally, we would throw an exception...
 		# ...but bash doesn't have exceptions :P
+		# actually, it kind of does. With the "set -e" and "pipefail" option, together with the exit trap, that's kind of like an exception.
 		
 		# but this leaves the destination's top-level dir modification time to be 
 		# NOW instead of that of the source, so sync this final datum before finishing
@@ -867,7 +868,7 @@ syncSourceToDest(){
 	getVerbose && echo "copy complete"
 	return 0
 }
-removeOldBackups(){ # not fully tested - e.g. not with pretend option set, not with strange exceptional cases
+removeOldBackups(){
 	local locationStem="$1"
 	
 	getVerbose && echo "checking for expired backups"
