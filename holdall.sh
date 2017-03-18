@@ -577,15 +577,15 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 		then
                     if [[ $itemRmvblModTime -gt $itemHostModTime ]]
                     then
-                            echo "merging newer directory $itemRmvblLoc from $itemRmvblModTimeReadable onto $itemHostLoc from $itemHostModTimeReadable"
-                            input=$OVRDRMVBLTOHOST
+                            echo "merging newer directory $itemRmvblLoc from $itemHostModTimeReadable onto $itemHostLoc from $itemHostModTimeReadable"
+                            input=$OVRDMERGERMVBLTOHOST
                     else 
                             if [[ $itemRmvblModTime -lt $itemHostModTime ]]
                             then
                                     echo "merging newer directory $itemHostLoc from $itemHostModTimeReadable onto $itemRmvblLoc from $itemRmvblModTimeReadable"
-                                    input=$OVRDHOSTTORMVBL
+                                    input=$OVRDMERGEHOSTTORMVBL
                             else # then mod times must be equal
-                                    echo "but both versions have the same modification time. Taking no action."
+                                    echo "but both versions have the same modification time ($itemHostModTimeReadable) Taking no action."
                                     input=$NOOVRD
                             fi
                     fi
