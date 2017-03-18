@@ -69,7 +69,7 @@ getRmvblFileTime(){
 	local itemName="$1"
 	echo $(date -r "$RMVBL/$itemName" +%s)
 }
-getRmvblDirTime(){
+getRmvblDirContentsTime(){
 	local itemName="$1"
 	echo $(date -r "$RMVBL/$itemName/file01" +%s)
 }
@@ -77,7 +77,7 @@ getHostFileTime(){
 	local itemName="$1"
 	echo $(date -r "$HOST/$itemName" +%s)
 }
-getHostDirTime(){
+getHostDirContentsTime(){
 	local itemName="$1"
 	echo $(date -r "$HOST/$itemName/file01" +%s)
 }
@@ -129,12 +129,12 @@ addToLocsList(){
 	echo "$HOST/$itemName" >> "$LOCSLIST"
 }
 
-checkLastSyncTimeHasNotBeenUpdated(){
+checkLastSyncTimeIsNotRecent(){
 	local itemName="$1"
 	local lastSyncTime=$(sed -n "s/$itemName $HOSTNAME LASTSYNCDATE \([0-9]*\)/\1/p" "$STATUSFILE")
 	[[ $lastSyncTime -lt $SAT ]] && return 0 || return 1
 }
-checkLastSyncTimeHasBeenUpdated(){
+checkLastSyncTimeIsRecent(){
 	local itemName="$1"
 	local lastSyncTime=$(sed -n "s/$itemName $HOSTNAME LASTSYNCDATE \([0-9]*\)/\1/p" "$STATUSFILE")
 	[[ $lastSyncTime -gt $SAT ]] && return 0 || return 1
@@ -206,7 +206,7 @@ unit001Check(){
 	[[ $(cat "$RMVBL/$itemName"-removed*/*) == "old" ]] || return 3
 	[[ $(getHostFileTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblFileTime "$itemName") -eq $FRI ]] || return 5
-	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsRecent "$itemName" || return 10
 	checkUTDisJustThisHost "$itemName" || return 11
 	return 0
 }
@@ -251,10 +251,10 @@ unit003Check(){
 	[[ $(cat "$HOST/$itemName/file01") == "new" ]] || return 1
 	[[ $(cat "$RMVBL/$itemName/file01") == "new" ]] || return 2
 	[[ $(cat "$RMVBL/$itemName/"*-removed*) == "old" ]] || return 3
-	[[ $(getHostDirTime "$itemName") -eq $FRI ]] || return 4
-	[[ $(getRmvblDirTime "$itemName") -eq $FRI ]] || return 5
+	[[ $(getHostDirContentsTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblDirContentsTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisNoHosts "$itemName" || return 11
 	return 0
 }
@@ -279,7 +279,7 @@ unit007Check(){
 	[[ $(getHostFileTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblFileTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName.*removable drive.*modified directly"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsRecent "$itemName" || return 10
 	checkUTDisJustThisHost "$itemName" || return 11
 	return 0
 }
@@ -303,7 +303,7 @@ unit008Check(){
 	[[ $(cat "$HOST/$itemName"-removed*/*) == "old" ]] || return 3
 	[[ $(getHostFileTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblFileTime "$itemName") -eq $FRI ]] || return 5
-	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsRecent "$itemName" || return 10
 	checkUTDisThisHostAndSomeOtherHost "$itemName" || return 11
 	return 0
 }
@@ -329,7 +329,7 @@ unit020Check(){
 	[[ $(getHostFileTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblFileTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisThisHostAndSomeOtherHost "$itemName" || return 11
 	return 0
 }
@@ -351,10 +351,10 @@ unit021Check(){
 	[[ $(cat "$HOST/$itemName/file01") == "new" ]] || return 1
 	[[ $(cat "$RMVBL/$itemName/file01") == "new" ]] || return 2
 	[[ $(cat "$HOST/$itemName/"*-removed*) == "old" ]] || return 3
-	[[ $(getHostDirTime "$itemName") -eq $FRI ]] || return 4
-	[[ $(getRmvblDirTime "$itemName") -eq $FRI ]] || return 5
+	[[ $(getHostDirContentsTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblDirContentsTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisJustThisHost "$itemName" || return 11
 	return 0
 }
@@ -378,7 +378,7 @@ unit022Check(){
 	[[ $(getHostFileTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblFileTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisJustSomeOtherHost "$itemName" || return 11
 	return 0
 }
@@ -400,10 +400,10 @@ unit023Check(){
 	[[ $(cat "$HOST/$itemName/file01") == "new" ]] || return 1
 	[[ $(cat "$RMVBL/$itemName/file01") == "new" ]] || return 2
 	[[ $(cat "$HOST/$itemName/"*-removed*) == "old" ]] || return 3
-	[[ $(getHostDirTime "$itemName") -eq $FRI ]] || return 4
-	[[ $(getRmvblDirTime "$itemName") -eq $FRI ]] || return 5
+	[[ $(getHostDirContentsTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblDirContentsTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisJustThisHost "$itemName" || return 11
 	return 0
 }
@@ -427,7 +427,7 @@ unit024Check(){
 	[[ $(getHostFileTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblFileTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisThisHostAndSomeOtherHost "$itemName" || return 11
 	return 0
 }
@@ -449,10 +449,10 @@ unit025Check(){
 	[[ $(cat "$HOST/$itemName/file01") == "new" ]] || return 1
 	[[ $(cat "$RMVBL/$itemName/file01") == "new" ]] || return 2
 	[[ $(cat "$RMVBL/$itemName/"*-removed*) == "old" ]] || return 3
-	[[ $(getHostDirTime "$itemName") -eq $FRI ]] || return 4
-	[[ $(getRmvblDirTime "$itemName") -eq $FRI ]] || return 5
+	[[ $(getHostDirContentsTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblDirContentsTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisNoHosts "$itemName" || return 11
 	return 0
 }
@@ -476,7 +476,7 @@ unit026Check(){
 	[[ $(getHostFileTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblFileTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisJustSomeOtherHost "$itemName" || return 11
 	return 0
 }
@@ -498,10 +498,10 @@ unit027Check(){
 	[[ $(cat "$HOST/$itemName/file01") == "new" ]] || return 1
 	[[ $(cat "$RMVBL/$itemName/file01") == "new" ]] || return 2
 	[[ $(cat "$RMVBL/$itemName/"*-removed*) == "old" ]] || return 3
-	[[ $(getHostDirTime "$itemName") -eq $FRI ]] || return 4
-	[[ $(getRmvblDirTime "$itemName") -eq $FRI ]] || return 5
+	[[ $(getHostDirContentsTime "$itemName") -eq $FRI ]] || return 4
+	[[ $(getRmvblDirContentsTime "$itemName") -eq $FRI ]] || return 5
 	grep "$itemName: $WARNINGFork"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisNoHosts "$itemName" || return 11
 	return 0
 }
@@ -599,7 +599,7 @@ unit031Check(){
 	[[ $(cat "$HOST/$itemName"-removed*/*) == "old" ]] || return 3
 	[[ $(getHostFileTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblFileTime "$itemName") -eq $WED ]] || return 5
-	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsRecent "$itemName" || return 10
 	checkUTDisThisHostAndSomeOtherHost "$itemName" || return 11
 	return 0
 }
@@ -1112,7 +1112,7 @@ unit072Check(){
 	[[ $(cat "$RMVBL/$itemName") == "host content" ]] || return 2
 	[[ $(getRmvblFileTime "$itemName") -eq $TUE ]] || return 5
 	grep "$itemName: first time syncing from host to removable drive"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsRecent "$itemName" || return 10
 	checkUTDisJustThisHost "$itemName" || return 11
 	return 0
 }
@@ -1171,7 +1171,7 @@ unit082Check(){
 	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblFileTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: first time syncing from removable drive to host"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsRecent "$itemName" || return 10
 	checkUTDisThisHostAndSomeOtherHost "$itemName" || return 11
 	return 0
 }
@@ -1194,7 +1194,7 @@ unit090Check(){
 	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblFileTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisJustSomeOtherHost "$itemName" || return 11
 	return 0
 }
@@ -1211,12 +1211,12 @@ unit091Initialise(){
 unit091Check(){
 	local itemName="unit 091"
 	[[ $(cat "$HOST/$itemName/file01") == "rmvbl content" ]] || return 1
-	[[ $(getHostDirTime "$itemName") -eq $WED ]] || return 4
+	[[ $(getHostDirContentsTime "$itemName") -eq $WED ]] || return 4
 	[[ $(cat "$HOST/$itemName/"*-removed*) == "host content" ]] || return 3
 	[[ $(cat "$RMVBL/$itemName/file01") == "rmvbl content" ]] || return 2
-	[[ $(getRmvblDirTime "$itemName") -eq $WED ]] || return 5
+	[[ $(getRmvblDirContentsTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisJustThisHost "$itemName" || return 11
 }
 # unit093 DESCRIPTION: NSP, NUTD, HE, RE, RT < HT, should say sync record is missing, do nothing, item is file
@@ -1236,7 +1236,7 @@ unit093Check(){
 	[[ $(cat "$RMVBL/$itemName") == "rmvbl content" ]] || return 2
 	[[ $(getRmvblFileTime "$itemName") -eq $TUE ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisJustSomeOtherHost "$itemName" || return 11
 	return 0
 }
@@ -1253,12 +1253,12 @@ unit094Initialise(){
 unit094Check(){
 	local itemName="unit 094"
 	[[ $(cat "$HOST/$itemName/file01") == "host content" ]] || return 1
-	[[ $(getHostDirTime "$itemName") -eq $WED ]] || return 4
+	[[ $(getHostDirContentsTime "$itemName") -eq $WED ]] || return 4
 	[[ $(cat "$RMVBL/$itemName/"*-removed*) == "rmvbl content" ]] || return 3
 	[[ $(cat "$RMVBL/$itemName/file01") == "host content" ]] || return 2
-	[[ $(getRmvblDirTime "$itemName") -eq $WED ]] || return 5
+	[[ $(getRmvblDirContentsTime "$itemName") -eq $WED ]] || return 5
 	grep "$itemName: $WARNINGUnexpectedSyncStatusAbsence"<<<"$holdallOutput" >/dev/null || return 6
-	checkLastSyncTimeHasNotBeenUpdated "$itemName" || return 10
+	checkLastSyncTimeIsNotRecent "$itemName" || return 10
 	checkUTDisNoHosts "$itemName" || return 11
 	return 0
 }
