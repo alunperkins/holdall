@@ -934,7 +934,6 @@ writeToStatusFileLASTSYNCDATEnow(){
 merge(){
 	# similar to a normal sync, this function handles the multiple steps involved in a merge
 	# 1. Merging with rsync in mergeSourceToDest  2. updating the status
-	# NOTE: do merges make sense when talking about files, rather than folders?
 	
 	local itemName="$1"
 	local mergeDirection=$2
@@ -948,6 +947,7 @@ merge(){
 			echoToLog "$itemName, host merged to removable drive"
 			echoToLog "$itemName, $itemHostLoc, merged to, $itemRmvblLoc"
 			appendLineToSummary "$itemName $SUMMARYTABLEmergeHostToRmvbl"
+			writeToStatusFileUPTODATEHOSTSassignEmpty "$itemName"
 			;;
 		$DIRECTIONRMVBLTOHOST)
 			echo "$itemName: $MESSAGEMergingRmvblToHost"
@@ -955,6 +955,7 @@ merge(){
 			echoToLog "$itemName, removable drive merged to host"
 			echoToLog "$itemName, $itemRmvblLoc, merged to, $itemHostLoc"
 			appendLineToSummary "$itemName $SUMMARYTABLEmergeRmvblToHost"
+			writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
 			;;
 		*)
 			echo merge was passed invalid argument $mergeDirection, there is a hard-coded fault
@@ -983,7 +984,6 @@ mergeSourceToDest(){
 		
 		# but the destination's top-level dir modification time should definitely be NOW
 		getPretend || touch -m "$destLoc"
-		
 	else # if it is a file
 		rsync $shortOpts $longOpts "$sourceLoc" "$destLoc" || copyErrorExit
 	fi # END rsync FILE/FOLDER BRANCHING BLOCK
