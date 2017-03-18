@@ -71,13 +71,7 @@ readonly WARNINGUnexpectedSyncStatusAbsence="Warning: The items both exist but t
 readonly WARNINGFork="Warning: The item has been forked - the removable drive and host version have independent changes. "
 readonly WARNINGUnexpectedlyNotOnUpToDateList="Warning: The item is showing no changes since last recorded sync but this host is not listed as having the latest changes. "
 readonly WARNINGUnexpectedDifference="Warning: The items differ even though the items' last modifications are dated before their last sync"
-readonly WARNINGAmbiguousTimings="Warning: Showing a simulataneous modification and synchronisation - the situation is ambiguous. "
-
-readonly WARNINGUnreachableState="Warning: The items' states and sync record are in a state that should be unreachable. " 
-#readonly WARNINGMissingSyncTime="Warning: The item exists on both the host and the removable drive, but there is no recorded sync time. "
-#readonly WARNINGMissingRmvbl="Warning: There is a record of syncing, but the item was not found on the removable drive. "
-#readonly WARNINGMissingHost="Warning: There is a record of syncing, but the item was not found on the host. "
-#readonly WARNINGMissingItems="Warning: There is a record of syncing, but the item wasn't found on the host nor the removable drive. "
+readonly WARNINGUnreachableState="Warning: The items' states and sync record are in a state that should be unreachable." 
 
 readonly MESSAGEAlreadyInSync="No changes since last synchronisation. "
 readonly MESSAGESyncingRmvblToHost="Syncing removable drive >> host"
@@ -579,19 +573,25 @@ chooseVersionDialog(){ # ARGS 1)itemName 2)itemHostLoc 3)itemHostModTime 4)itemR
 	if [[ $AUTOMATIC == "on" ]]
 	then
 		echo -n "Automatic mode on > "
-		if [[ $itemRmvblModTime -gt $itemHostModTime ]]
+		if [[ -d "$itemRmvblLoc" ]] # if directories are forked, merge them. If a single file, do nothing.
 		then
-			echo "writing newer $itemRmvblLoc from $itemRmvblModTimeReadable onto $itemHostLoc from $itemHostModTimeReadable"
-			input=$OVRDRMVBLTOHOST
-		else 
-			if [[ $itemRmvblModTime -lt $itemHostModTime ]]
-			then
-				echo "writing newer $itemHostLoc from $itemHostModTimeReadable onto $itemRmvblLoc from $itemRmvblModTimeReadable"
-				input=$OVRDHOSTTORMVBL
-			else # then mod times must be equal
-				echo "but both versions have the same modification time. Taking no action."
-			fi
-		fi
+                    if [[ $itemRmvblModTime -gt $itemHostModTime ]]
+                    then
+                            echo "merging newer directory $itemRmvblLoc from $itemRmvblModTimeReadable onto $itemHostLoc from $itemHostModTimeReadable"
+                            input=$OVRDRMVBLTOHOST
+                    else 
+                            if [[ $itemRmvblModTime -lt $itemHostModTime ]]
+                            then
+                                    echo "merging newer directory $itemHostLoc from $itemHostModTimeReadable onto $itemRmvblLoc from $itemRmvblModTimeReadable"
+                                    input=$OVRDHOSTTORMVBL
+                            else # then mod times must be equal
+                                    echo "but both versions have the same modification time. Taking no action."
+                                    input=$NOOVRD
+                            fi
+                    fi
+                else
+                    input=$NOOVRD
+                fi
 	else # print some information to help the user choose whether to write host>rmvbl or rmvbl>host
 		echo "   USER INPUT REQUIRED  -  keep which version of itemName $itemName?"
 		if [[ -d "$itemRmvblLoc" ]]
@@ -1155,7 +1155,7 @@ main(){
 		local itemRmvblLoc="$RMVBLDIR/$itemName"
 		echoTitle " $itemName "
 		
-		echo syncing $itemHostLoc with $itemRmvblLoc
+		echo "syncing $itemHostLoc with $itemRmvblLoc"
 		
 		# ------ Step 2: retrieve data about this item from SYNCSTATUSFILE ------
 		
@@ -1328,158 +1328,105 @@ main(){
 			# so:
 			# -------- below here $itemSyncedPreviously is true --------
 			
-			if [[ $itemRmvblModTime -gt $itemSyncTime && $itemSyncTime -gt $itemHostModTime ]]
+			# -------- OK - normal circumstance where the host has unshared changes --------
+			if [[ $itemHostModTime -gt $itemSyncTime && $itemSyncTime -gt $itemRmvblModTime && $hostUpToDateWithItem == $TRUE ]]
 			then
-				if [[ $hostUpToDateWithItem == $TRUE ]]
-				then
-					# BRANCH END
-					# then item has been modified directly on the removable drive (instead of on a host)
-					echo "$itemName: Note: Apparently the removable drive has been modified directly (instead of recieving a change from a host) (host mod older than sync time older than removable drive mod but local host listed as up-to-date)"
-					echoToLog "$itemName, removable drive version was modified directly - change appeared not from a host"
-					# but that's fine, proceed.
-					# sync removable drive onto host
-                                        if getPermission "want to sync removable >>> to >>> host"
-                                        then
-                                                synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
-                                                writeToStatusFileLASTSYNCDATEnow "$itemName"
-                                                writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
-                                        else
-                                                chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
-                                        fi
-				else
-					# BRANCH END
-					# then have history: modded here > synced to removable drive > removable drive accepted change from elsewhere (possibly directly instead of from a host)
-					getVerbose && echo "removable drive has been modified since last sync (and host hasn't)"
-					# so update this host with that change
-					# sync removable drive onto host
-                                        if getPermission "want to sync removable >>> to >>> host"
-                                        then
-                                                synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
-                                                writeToStatusFileLASTSYNCDATEnow "$itemName"
-                                                writeToStatusFileUPTODATEHOSTSappendThisHost "$itemName"
-                                        else
-                                                chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
-                                        fi
-				fi
-				continue
-			fi
-			if [[ $itemHostModTime -gt $itemSyncTime && $itemSyncTime -gt $itemRmvblModTime ]]
+                            # BRANCH END
+                            # then have history: removable drive synced with host > removable drive hasn't been updated since that sync > host has been updated since that sync
+                            getVerbose && echo "host has been modified since last sync (and removable drive hasn't)"
+                            # so update the removable drive with the changes made on this host
+                            # sync host to removable drive
+                            if getPermission "want to sync host >>> to >>> removable"
+                            then
+                                synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
+                                writeToStatusFileLASTSYNCDATEnow "$itemName"
+                                writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
+                            else
+                                chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+                            fi
+                        fi
+                        
+                        # -------- OK - normal circumstance(s) where the rmvbl has changes not yet shared with this host --------
+                        if [[ ( $itemRmvblModTime -gt $itemSyncTime && $itemSyncTime -gt $itemHostModTime && $hostUpToDateWithItem != $TRUE ) \
+                        || ( $itemSyncTime -gt $itemRmvblModTime && $itemRmvblModTime -gt $itemHostModTime && $hostUpToDateWithItem != $TRUE) ]]
+                        then
+                            # BRANCH END
+                            # then have history: modded here > synced to removable drive > removable drive accepted change from elsewhere (possibly directly instead of from a host)
+                            getVerbose && echo "removable drive has been modified since last sync (and host hasn't)"
+                            # so update this host with that change
+                            # sync removable drive onto host
+                            if getPermission "want to sync removable >>> to >>> host"
+                            then
+                                synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+                                writeToStatusFileLASTSYNCDATEnow "$itemName"
+                                writeToStatusFileUPTODATEHOSTSappendThisHost "$itemName"
+                            else
+                                chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+                            fi
+                        fi
+                        
+                        # -------- OK - normal circumstance(s) where the rmvbl has changes not yet shared with this host BECAUSE it was modified directly --------
+                        if [[ ( $itemRmvblModTime -gt $itemSyncTime && $itemSyncTime -gt $itemHostModTime && $hostUpToDateWithItem == $TRUE ) ]]
+                        then
+                            # BRANCH END
+                            # then item has been modified directly on the removable drive (instead of on a host)
+                            echo "$itemName: Note: Apparently the removable drive has been modified directly (instead of recieving a change from a host) (host mod older than sync time older than removable drive mod but local host listed as up-to-date)"
+                            echoToLog "$itemName, removable drive version was modified directly - change appeared not from a host"
+                            # but that's fine, proceed.
+                            # sync removable drive onto host
+                            if getPermission "want to sync removable >>> to >>> host"
+                            then
+                                synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
+                                writeToStatusFileLASTSYNCDATEnow "$itemName"
+                                writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
+                            else
+                                chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+                            fi
+                        fi
+                        
+                        # -------- OK - normal circumstance where there have been no changes since last sync --------
+                        if [[ $itemSyncTime -gt $itemRmvblModTime && $itemSyncTime -gt $itemHostModTime && $hostUpToDateWithItem == $TRUE ]]
+                        then
+                            # BRANCH END
+                            # then have history: host and removable drive were synced > no changes > now they are being synced again, i.e. no changes since last sync
+                            echo "$itemName: $MESSAGEAlreadyInSync"
+                            appendLineToSummary "$itemName $SUMMARYTABLEskip"
+                            echo "$itemName: skipping"
+                        fi
+			
+			# -------- error: forked --------
+			if [[ ( $itemHostModTime -gt $itemSyncTime && $itemSyncTime -gt $itemRmvblModTime  && $hostUpToDateWithItem != $TRUE ) \
+			|| ( $itemRmvblModTime -gt $itemSyncTime && $itemHostModTime -gt $itemSyncTime ) ]]
 			then
-				if [[ $hostUpToDateWithItem == $TRUE ]]
-				then
-					# BRANCH END
-					# then have history: removable drive synced with host > removable drive hasn't been updated since that sync > host has been updated since that sync
-					getVerbose && echo "host has been modified since last sync (and removable drive hasn't)"
-					# so update the removable drive with the changes made on this host
-					# sync host to removable drive
-                                        if getPermission "want to sync host >>> to >>> removable"
-                                        then
-                                                synchronise "$itemName" $DIRECTIONHOSTTORMVBL "$itemHostLoc" "$itemRmvblLoc"
-                                                writeToStatusFileLASTSYNCDATEnow "$itemName"
-                                                writeToStatusFileUPTODATEHOSTSassignThisHost "$itemName"
-                                        else
-                                                chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
-                                        fi
-				else
-					# BRANCH END
-					# item has been forked
-					echo "$itemName: $WARNINGFork"
-					echoToLog "$itemName, $WARNINGFork"
-					appendLineToSummary "$itemName $SUMMARYTABLEfork"
-					echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
-					# offer override
-					chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
-				fi
-				continue
+                            # BRANCH END
+                            # item has been forked
+                            echo "$itemName: $WARNINGFork"
+                            echoToLog "$itemName, $WARNINGFork"
+                            appendLineToSummary "$itemName $SUMMARYTABLEfork"
+                            echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
+                            # offer override
+                            chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
+                            continue
 			fi
-			if [[ $itemRmvblModTime -gt $itemSyncTime && $itemHostModTime -gt $itemSyncTime ]]
-			then
-				# BRANCH END
-				# item has been forked
-				echo "$itemName: $WARNINGFork"
-				echoToLog "$itemName, $WARNINGFork"
-				appendLineToSummary "$itemName $SUMMARYTABLEfork"
-				echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
-				# offer override
-				chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
-				continue
-			fi
-			if [[ $itemSyncTime -gt $itemRmvblModTime && $itemSyncTime -gt $itemHostModTime ]]
-			then
-				if [[ $hostUpToDateWithItem == $TRUE ]]
-				then
-					# BRANCH END
-					# then have history: host and removable drive were synced > no changes > now they are being synced again, i.e. no changes since last sync
-					# no action needed - except perhaps displaying a message
-					echo "$itemName: $MESSAGEAlreadyInSync"
-					# echo "$itemName: Confirming versions are identical - this may take a few seconds..."
-					# local itemVersionsDifference="$(diffItems "$itemHostLoc" "$itemRmvblLoc")"
-					# echoToLog "$itemName, difference: "
-					# echoToLog "$itemVersionsDifference"
-					# if [[ ! -z $itemVersionsDifference ]]
-					# then
-						# echo $WARNINGUnexpectedDifference
-						# echoToLog "$itemName, $WARNINGUnexpectedDifference"
-						# chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
-						# continue
-					# fi
-					appendLineToSummary "$itemName $SUMMARYTABLEskip"
-					echo "$itemName: skipping"
-				else
-					if [[ $itemRmvblModTime -gt $itemHostModTime ]]
-					then
-						# BRANCH END
-						# the order of events is: mod on host, mod on removable, sync this host with removable, syncing now
-						# but crucially the this host is not on the up-to-date list.
-						# so have history: a modification was made on another up-to-date host we'll call anthrhst. This host and removable drive were synced. 
-						# Then anthrhst and removable drive were synced, which puts onto the drive the modification from anthrhst which 
-						# is dated BEFORE the sync of this host and the removable drive.
-						
-						# the fact that this host is not on the up-to-date list means that the mod from anthrhst is the latest version.
-						# ! ! ! ! UNLESS the sync with anthrhst was a resolution of a forked version ! ! ! !
-						# which would mean that this sync is currently looking at forked versions too...
-						echo "$itemName: Note: If you have recently resolved a fork for this item then at this time the host and removable drive versions MAY ALSO be forked versions."
-						echoToLog "$itemName, Note: If you have recently resolved a fork for this item then at this time the host and removable drive versions MAY ALSO be forked versions."
-                                                if getPermission "want to assume no recent forking problems and proceed with syncing removable drive onto host"
-                                                then
-                                                        synchronise "$itemName" $DIRECTIONRMVBLTOHOST "$itemHostLoc" "$itemRmvblLoc"
-                                                        writeToStatusFileLASTSYNCDATEnow "$itemName"
-                                                        writeToStatusFileUPTODATEHOSTSappendThisHost "$itemName"
-                                                else
-                                                        chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
-                                                fi
-					else
-						# BRANCH END
-						# the order of events is: mod on removable, mod on host, sync with removable
-						# but crucially the this host IS on the up-to-date list.
-						# I think this means that the work has been forked.
-						
-						echo "$itemName: $WARNINGFork"
-						echoToLog "$itemName, $WARNINGFork"
-						appendLineToSummary "$itemName $SUMMARYTABLEfork"
-						echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
-						# offer override
-						chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
-						continue
-					fi
-				fi
-				continue
-			fi
+			
+			# -------- all other states: error: state (should be) unreachable --------
+			
 			# BRANCH END
-			# if [[ we reach this line ]]; then 
-			#	sync time must be simulataneous with local mod time and/or removable drive mod time (within 1s)
-			# 	so can't sensibly decide what to do
-			# simulataneous modification and sync will always result from a MERGE! Now that merging has been implemented, this section needs more nuance.
-			echo "$itemName: $WARNINGAmbiguousTimings"
-			echoToLog "$itemName, $WARNINGAmbiguousTimings"
+			echo "$itemName: $WARNINGUnreachableState"
+			echoToLog "$itemName, $WARNINGUnreachableState"
 			appendLineToSummary "$itemName $SUMMARYTABLEerror"
 			echo "$itemName: status file: synced on $(readableDate $itemSyncTime)"
+			if [[ $itemHostModTime -eq $itemSyncTime ]]; then echo "$itemName: host modification time is the same as sync time"; fi
+			if [[ $itemRmvblModTime -eq $itemSyncTime ]]; then echo "$itemName: rmvbl modification time is the same as sync time"; fi
+			if [[ $itemRmvblModTime -eq $itemHostModTime ]]; then echo "$itemName: host modification time is the same as rmvbl modification time"; fi
 			# offer override
 			chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
-			
 			continue
-		fi # end of the "if all exist" block
+			
+		fi # end of the "if both exist" block
+		
 		# ----------------note that that's all four of the non/existence cases, this area is UNREACHABLE----------------
+		exit 99 # if by some witchcraft this line is reached
 		
 	done < <(cleanCommentsAndWhitespace "$LOCSLIST") # end of while loop over items
 	
@@ -1490,7 +1437,6 @@ main(){
 	echoTitle " SUMMARY "
 	echo -e "$summary" | column -t -s " "
 	echo " ($(date))"
-		
 	
 	getVerbose && echoTitle " end of script "
 	return 0

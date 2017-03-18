@@ -37,13 +37,7 @@ readonly WARNINGUnexpectedSyncStatusAbsence="Warning: The items both exist but t
 readonly WARNINGFork="Warning: The item has been forked - the removable drive and host version have independent changes. "
 readonly WARNINGUnexpectedlyNotOnUpToDateList="Warning: The item is showing no changes since last recorded sync but this host is not listed as having the latest changes. "
 readonly WARNINGUnexpectedDifference="Warning: The items differ even though the items' last modifications are dated before their last sync"
-readonly WARNINGAmbiguousTimings="Warning: Showing a simulataneous modification and synchronisation - the situation is ambiguous. " 
-
-readonly WARNINGUnreachableState="Warning: The items' states and sync record are in a state that should be unreachable. " 
-#readonly WARNINGMissingSyncTime="Warning: The item exists on both the host and the removable drive, but there is no recorded sync time. "
-#readonly WARNINGMissingRmvbl="Warning: There is a record of syncing, but the item was not found on the removable drive. "
-#readonly WARNINGMissingHost="Warning: There is a record of syncing, but the item was not found on the host. "
-#readonly WARNINGMissingItems="Warning: There is a record of syncing, but the item wasn't found on the host nor the removable drive. "
+readonly WARNINGUnreachableState="Warning: The items' states and sync record are in a state that should be unreachable." 
 
 appendLineToReport(){
 	report="$report\n$1"
@@ -567,7 +561,7 @@ unit040Check(){
 	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
-	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	checkUTDisThisHostAndSomeOtherHost "$itemName" || return 11
 	return 0
@@ -591,7 +585,7 @@ unit041Check(){
 	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
-	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	checkUTDisJustSomeOtherHost "$itemName" || return 11
 	return 0
@@ -615,7 +609,7 @@ unit042Check(){
 	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
-	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	[[ $(getSyncTime "$itemName") -eq $MON ]] || return 10
 	checkUTDisThisHostAndSomeOtherHost "$itemName" || return 11
 	return 0
@@ -639,7 +633,7 @@ unit043Check(){
 	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
-	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	[[ $(getSyncTime "$itemName") -eq $MON ]] || return 10
 	checkUTDisJustSomeOtherHost "$itemName" || return 11
 	return 0
@@ -663,7 +657,7 @@ unit044Check(){
 	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
-	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	checkUTDisThisHostAndSomeOtherHost "$itemName" || return 11
 	return 0
@@ -687,7 +681,7 @@ unit045Check(){
 	[[ $(cat "$RMVBL/$itemName") == "new" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $MON ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $FRI ]] || return 5
-	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	[[ $(getSyncTime "$itemName") -eq $FRI ]] || return 10
 	checkUTDisJustSomeOtherHost "$itemName" || return 11
 	return 0
@@ -711,7 +705,7 @@ unit046Check(){
 	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
-	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	[[ $(getSyncTime "$itemName") -eq $MON ]] || return 10
 	checkUTDisThisHostAndSomeOtherHost "$itemName" || return 11
 	return 0
@@ -735,7 +729,7 @@ unit047Check(){
 	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $FRI ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $MON ]] || return 5
-	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	[[ $(getSyncTime "$itemName") -eq $MON ]] || return 10
 	checkUTDisJustSomeOtherHost "$itemName" || return 11
 	return 0
@@ -759,7 +753,7 @@ unit048Check(){
 	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
-	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	[[ $(getSyncTime "$itemName") -eq $WED ]] || return 10
 	checkUTDisThisHostAndSomeOtherHost "$itemName" || return 11
 	return 0
@@ -783,7 +777,7 @@ unit049Check(){
 	[[ $(cat "$RMVBL/$itemName") == "old" ]] || return 2
 	[[ $(getHostTime "$itemName") -eq $WED ]] || return 4
 	[[ $(getRmvblTime "$itemName") -eq $WED ]] || return 5
-	grep "$itemName: $WARNINGAmbiguousTimings"<<<"$holdallOutput" >/dev/null || return 6
+	grep "$itemName: $WARNINGUnreachableState"<<<"$holdallOutput" >/dev/null || return 6
 	[[ $(getSyncTime "$itemName") -eq $WED ]] || return 10
 	checkUTDisJustSomeOtherHost "$itemName" || return 11
 	return 0
@@ -1134,6 +1128,7 @@ main(){
 	# local failures=0
 	for unit in $listOfUnits
 	do
+                echo "evaluating tests $unit"
 		local unitDesc="$(sed -n "s/# $unit DESCRIPTION: \(.*\)/\1/p" $PROGNAME )" # save the description comment for this unit
 		set +e
 		${unit}Check # run this unit's checker
