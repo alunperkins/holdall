@@ -1343,6 +1343,7 @@ main(){
                             else
                                 chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
                             fi
+			    continue
                         fi
                         
                         # -------- OK - normal circumstance(s) where the rmvbl has changes not yet shared with this host --------
@@ -1362,6 +1363,7 @@ main(){
                             else
                                 chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
                             fi
+			    continue
                         fi
                         
                         # -------- OK - normal circumstance(s) where the rmvbl has changes not yet shared with this host BECAUSE it was modified directly --------
@@ -1381,6 +1383,7 @@ main(){
                             else
                                 chooseVersionDialog "$itemName" "$itemHostLoc" $itemHostModTime "$itemRmvblLoc" $itemRmvblModTime $itemSyncTime
                             fi
+			    continue
                         fi
                         
                         # -------- OK - normal circumstance where there have been no changes since last sync --------
@@ -1391,6 +1394,7 @@ main(){
                             echo "$itemName: $MESSAGEAlreadyInSync"
                             appendLineToSummary "$itemName $SUMMARYTABLEskip"
                             echo "$itemName: skipping"
+			    continue
                         fi
 			
 			# -------- error: forked --------
