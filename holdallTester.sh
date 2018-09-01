@@ -66,18 +66,22 @@ setHostDirTime(){
 	touch -m -d "$(date --date=@$time +%c)" "$HOST/$itemName"
 }
 getRmvblFileTime(){
+    set -euo pipefail
 	local itemName="$1"
 	echo $(date -r "$RMVBL/$itemName" +%s)
 }
 getRmvblDirContentsTime(){
+    set -euo pipefail
 	local itemName="$1"
 	echo $(date -r "$RMVBL/$itemName/file01" +%s)
 }
 getHostFileTime(){
+    set -euo pipefail
 	local itemName="$1"
 	echo $(date -r "$HOST/$itemName" +%s)
 }
 getHostDirContentsTime(){
+    set -euo pipefail
 	local itemName="$1"
 	echo $(date -r "$HOST/$itemName/file01" +%s)
 }
@@ -112,6 +116,7 @@ setSyncTime(){
 	echo "$itemName $HOSTNAME LASTSYNCDATE $time" >> "$STATUSFILE"
 }
 getSyncTime(){
+    set -euo pipefail
 	local itemName="$1"
 	local lastSyncTime=$(sed -n "s/$itemName $HOSTNAME LASTSYNCDATE \([0-9]*\)/\1/p" "$STATUSFILE")
 	echo $lastSyncTime

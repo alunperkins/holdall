@@ -159,6 +159,7 @@ echoTitle(){ # echo $1 with a line of dashes
 	return 0
 }
 readableDate(){ # convert seconds-since-epoch to human-readable
+    set -euo pipefail
 	local dateInSecondSinceEpoch=$1
 	echo $(date --date=@$dateInSecondSinceEpoch +%c)
 	return 0
@@ -168,6 +169,7 @@ appendLineToSummary(){
 	return 0
 }
 generateBackupName(){
+    set -euo pipefail
 	local destLoc="$1"
 	local backupName=$(dirname "$destLoc")/$(basename "$destLoc")-removed-$(date +%F-%H%M)~
 	echo "$backupName"
@@ -186,6 +188,7 @@ copyErrorExit(){
 }
 
 modTimeOf(){
+    set -euo pipefail
 	# returns the latest mod time of argument $1
 	# if passed a file, it returns the mod time of the file, 
 	# if passed a directory, returns the latest mod time of the directory, its subdirectories, and its contained files.
@@ -774,9 +777,6 @@ synchronise(){ # caller should have ALREADY obtained permission with getPermissi
 	local syncDirection=$2
 	local itemHostLoc="$3"
 	local itemRmvblLoc="$4"
-	
-	# echoToLog "$itemName, difference: "
-	# echoToLog "$(diffItems "$itemHostLoc" "$itemRmvblLoc")" # slow and uneccessary
 	
 	case $syncDirection in
 		$DIRECTIONHOSTTORMVBL)
