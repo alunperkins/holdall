@@ -8,7 +8,6 @@ set -o pipefail
 readonly PROGNAME=$(basename $0)
 
 # this tests the logic of holdall for different mod time/history configurations, to see if it does the sync in the correct direction
-# it tests files only, not folders
 
 readonly HOST="holdAllTester SimulatedHost"
 readonly RMVBL="holdAllTester SimulatedRmvbl"
@@ -1357,23 +1356,21 @@ main(){
 	# run all the checkers
 	echo 
 	echo "evaluating tests..."
-	# local failures=0
 	for unit in $listOfUnits
 	do
-                echo "evaluating tests $unit"
+        echo "evaluating test $unit"
 		local unitDesc="$(sed -n "s/# $unit DESCRIPTION: \(.*\)/\1/p" $PROGNAME )" # save the description comment for this unit
 		set +e
 		${unit}Check # run this unit's checker
 		unitExitVal=$?
 		set -e
-		[[ $unitExitVal -eq 0 ]] && appendLineToReport "$unit@Pass@$unitDesc" || appendLineToReport "$unit@fail state $unitExitVal@$unitDesc" #; failures=$((failures+1)); echo "failures=$failures" )
+		[[ $unitExitVal -eq 0 ]] && appendLineToReport "$unit@Pass@$unitDesc" || appendLineToReport "$unit@fail state $unitExitVal@$unitDesc"
 	done
 	
 	echo -e "$report" | column -t -s "@"
 	
-	# echo "there were $failures failures"
 	echo 
-	if [[ ! -z $holdallCustomOptions ]]; then echo "BUT custom options were used"; fi
+	if [[ ! -z $holdallCustomOptions ]]; then echo "BUT custom options were used that the tests were not designed for"; fi
 	echo
 	echo "end of script"
 }
