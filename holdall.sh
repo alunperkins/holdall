@@ -18,7 +18,8 @@ set -o pipefail
 
 trap 'finally' 0 # fun function "finally" if any command causes an exit (which, in strict mode, many commands might do)
 finally(){
-        echo "TRAP: command $BASH_COMMAND caused an exit. Its exit status was $?";
+        EXIT_STATUS=$? && LAST_COMMAND="$BASH_COMMAND"
+        [[ "$EXIT_STATUS" -eq 0 ]] || echo "TRAP: command \"$LAST_COMMAND\" caused an exit. Its exit status was $EXIT_STATUS";
 }
 
 readonly TRUE=TRUE # can be any unique string
