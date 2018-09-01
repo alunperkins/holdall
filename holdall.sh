@@ -22,8 +22,19 @@ finally(){
         [[ "$EXIT_STATUS" -eq 0 ]] || echo "TRAP: command \"$LAST_COMMAND\" caused an exit. Its exit status was $EXIT_STATUS";
 }
 
-readonly TRUE="TRUE" # can be any unique string
-readonly FALSE="FALSE" # can be any unique string
+readonly TRUE="TRUE_2430514920" # can be any unique string
+readonly FALSE="FALSE_3060123633" # can be any unique string
+isTrue(){
+    [[ "$1" == "$TRUE" ]]
+}
+isNotTrue(){
+    if isTrue "$1"
+    then
+        return 1
+    else
+        return 0
+    fi
+}
 
 readonly PROGNAME="$(basename "$0")"
 readonly PROGDIR="$(readlink -m "$(dirname $0)")"
@@ -1169,13 +1180,13 @@ main(){
 		grep -qE "^$itemName $HOSTNAME LASTSYNCDATE [[:digit:]]{9,}" "$SYNCSTATUSFILE" && local itemSyncedPreviously="$TRUE" || local itemSyncedPreviously="$FALSE"
 		
 		# if given, what is the sync time?
-		if [[ "$itemSyncedPreviously" == "$TRUE" ]]
+		if isTrue "$itemSyncedPreviously"
 		then
 			# extract the sync time from the file using a regular expression
 			itemSyncTime="$(grep -oE "[[:digit:]]{9,}$" <<<"$itemDateLine")" #date string format is seconds since epoch # WATCH OUT for hard/soft quoting in sed here!
 		fi
 		
-		if [[ "$itemSyncedPreviously" == "$TRUE" ]]
+		if isTrue "$itemSyncedPreviously"
 		then
 			getVerbose && echo "status file: synced previously on = $(readableDate "$itemSyncTime")"
 			echoToLog "$itemName, last synced on, $(readableDate "$itemSyncTime")"
@@ -1186,7 +1197,7 @@ main(){
 		
 		# is this host shown as up to date with this item?
 		grep -q "^$itemName UPTODATEHOSTS.* $HOSTNAME,.*$" "$SYNCSTATUSFILE" && local hostUpToDateWithItem="$TRUE" || local hostUpToDateWithItem="$FALSE"
-		if [[ "$hostUpToDateWithItem" == "$TRUE" ]]
+		if isTrue "$hostUpToDateWithItem"
 		then
 			getVerbose && echo "status file: this host has latest changes"
 			echoToLog "$itemName, this host has latest changes"
@@ -1196,7 +1207,7 @@ main(){
 		fi
 		
 		# an example of an invalid state for the status 
-		if [[ ("$hostUpToDateWithItem" == "$TRUE") && ("$itemSyncedPreviously" == "$FALSE") ]]
+		if isTrue "$hostUpToDateWithItem" && isNotTrue "$itemSyncedPreviously"
 		then
 			echo "$itemName: $WARNINGStatusInconsistent"
 			echoToLog "$itemName, $WARNINGStatusInconsistent"
@@ -1218,9 +1229,9 @@ main(){
 		# ------ Step 4: logic ------
 		
 		# --------------------------------if neither removable drive nor host exist--------------------------------
-		if [[ "$itemHostExists" == "$FALSE" && "$itemRmvblExists" == "$FALSE" ]]
+		if isNotTrue "$itemHostExists" && isNotTrue "$itemRmvblExists"
 		then
-			if [[ "$itemSyncedPreviously" == "$TRUE" || "$hostUpToDateWithItem" == "$TRUE" ]]
+			if isTrue "$itemSyncedPreviously" || isTrue "$hostUpToDateWithItem"
 			then 
 				# BRANCH END
 				echo "$itemName: $WARNINGSyncStatusForNonexistentItems"
@@ -1239,9 +1250,9 @@ main(){
 		fi
 		
 		# --------------------------------if host exists, but removable drive doesn't--------------------------------
-		if [[ "$itemHostExists" == "$TRUE" && "$itemRmvblExists" == "$FALSE" ]]
+		if isTrue "$itemHostExists" && isNotTrue "$itemRmvblExists"
 		then
-			if [[ "$itemSyncedPreviously" == "$FALSE" ]]
+			if isNotTrue "$itemSyncedPreviously"
 			then 
 				# BRANCH END
 				# then sync Host onto the Rmvbl
@@ -1268,9 +1279,9 @@ main(){
 		fi
 		
 		# --------------------------------if removable drive exists, but host doesn't--------------------------------
-		if [[ "$itemHostExists" == "$FALSE" && "$itemRmvblExists" == "$TRUE" ]]
+		if isNotTrue "$itemHostExists" && isTrue "$itemRmvblExists"
 		then
-			if [[ "$itemSyncedPreviously" == "$FALSE" ]]
+			if isNotTrue "$itemSyncedPreviously"
 			then 
 				# BRANCH END
 				# then sync Rmvbl onto Host 
@@ -1296,7 +1307,7 @@ main(){
 		fi
 		
 		# --------------------------------if both removable drive and host exist--------------------------------
-		if [[ "$itemHostExists" == "$TRUE" && "$itemRmvblExists" == "$TRUE" ]]
+		if isTrue "$itemHostExists" && isTrue "$itemRmvblExists"
 		then
 			# check for mismatched items
 			if [[ ((-d "$itemHostLoc") && (! -d "$itemRmvblLoc")) || ((! -d "$itemHostLoc") && (-d "$itemRmvblLoc")) ]]
@@ -1318,7 +1329,7 @@ main(){
 			echoToLog "$itemName, host  mod time, $(readableDate "$itemHostModTime")"
 			echoToLog "$itemName, rmvbl mod time, $(readableDate "$itemRmvblModTime")"
 			
-			if [[ "$itemSyncedPreviously" == "$FALSE" ]]
+			if isNotTrue "$itemSyncedPreviously"
 			then
 				# then the status in file is in contradiction with the state on disk
 				# offer override to erase the status and proceed
@@ -1334,7 +1345,7 @@ main(){
 			# -------- below here $itemSyncedPreviously is true --------
 			
 			# -------- OK - normal circumstance where the host has unshared changes --------
-			if [[ "$itemHostModTime" -gt "$itemSyncTime" && "$itemSyncTime" -gt "$itemRmvblModTime" && "$hostUpToDateWithItem" == "$TRUE" ]]
+			if [[ "$itemHostModTime" -gt "$itemSyncTime" && "$itemSyncTime" -gt "$itemRmvblModTime" ]] && isTrue "$hostUpToDateWithItem"
 			then
                             # BRANCH END
                             # then have history: removable drive synced with host > removable drive hasn't been updated since that sync > host has been updated since that sync
@@ -1373,7 +1384,7 @@ main(){
                         fi
                         
                         # -------- OK - normal circumstance(s) where the rmvbl has changes not yet shared with this host BECAUSE it was modified directly --------
-                        if [[ ( "$itemRmvblModTime" -gt "$itemSyncTime" && "$itemSyncTime" -gt "$itemHostModTime" && "$hostUpToDateWithItem" == "$TRUE" ) ]]
+                        if [[ ( "$itemRmvblModTime" -gt "$itemSyncTime" && "$itemSyncTime" -gt "$itemHostModTime" ) ]] && isTrue "$hostUpToDateWithItem"
                         then
                             # BRANCH END
                             # then item has been modified directly on the removable drive (instead of on a host)
@@ -1393,7 +1404,7 @@ main(){
                         fi
                         
                         # -------- OK - normal circumstance where there have been no changes since last sync --------
-                        if [[ "$itemSyncTime" -gt "$itemRmvblModTime" && "$itemSyncTime" -gt "$itemHostModTime" && "$hostUpToDateWithItem" == "$TRUE" ]]
+                        if [[ "$itemSyncTime" -gt "$itemRmvblModTime" && "$itemSyncTime" -gt "$itemHostModTime" ]] && isTrue "$hostUpToDateWithItem"
                         then
                             # BRANCH END
                             # then have history: host and removable drive were synced > no changes > now they are being synced again, i.e. no changes since last sync
