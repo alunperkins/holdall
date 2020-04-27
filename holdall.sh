@@ -693,8 +693,8 @@ hostMissingDialog(){
 		$OVRDERASEITEM)
 			# ask "are you sure?" and look for answer $OVRDAREYOUSUREYES, which should be something that won't be typed by accident
 			echo "are you sure you want to permanently delete $itemRmvblLoc ? Type $OVRDAREYOUSUREYES if you are."
-			read -p '   > ' input </dev/tty
-			[[ "$input" == "$OVRDAREYOUSUREYES" ]] && deleteItem "$itemRmvblLoc" || echo "$itemName: taking no action"
+			read -p '   > ' inputConfirm </dev/tty
+			[[ "$inputConfirm" == "$OVRDAREYOUSUREYES" ]] && deleteItem "$itemRmvblLoc" || echo "$itemName: taking no action"
 			;;
 		$OVRDDELFROMLOCSLIST)
 			deleteLocationFromLocsList "$itemHostLocRaw"
@@ -737,8 +737,8 @@ rmvblMissingDialog(){
 		$OVRDERASEITEM)
 			# ask "are you sure?" and look for answer $OVRDAREYOUSUREYES, which should be something that won't be typed by accident
 			echo "are you sure you want to permanently delete $itemHostLoc? Type $OVRDAREYOUSUREYES if you are."
-			read -p '   > ' input </dev/tty
-			[[ "$input" == "$OVRDAREYOUSUREYES" ]] && deleteItem "$itemHostLoc" || echo "$itemName: taking no action"
+			read -p '   > ' inputConfirm </dev/tty
+			[[ "$inputConfirm" == "$OVRDAREYOUSUREYES" ]] && deleteItem "$itemHostLoc" || echo "$itemName: taking no action"
 			;;
 		$OVRDDELFROMLOCSLIST)
 			deleteLocationFromLocsList "$itemHostLocRaw"
@@ -1087,7 +1087,7 @@ readOptions(){
 	return 0
 }
 
-main(){
+main() {
 	if [[ $@ == *"--help"*  ]]; then showHelp; exit 0; fi
 	readOptions "$@"
 	shift $(($OPTIND-1)) # builtin function "getopts" (inside readOptions) is always used in conjunction with "shift"

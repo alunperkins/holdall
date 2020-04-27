@@ -28,6 +28,7 @@ if isTrue "$TRUE" && isNotTrue "$FALSE"; then echo "OK"; else echo "not OK"; fi
 if isTrue "$TRUE" && isNotTrue "$TRUE"; then echo "not OK"; else echo "OK"; fi
 if isTrue "$FALSE" && isNotTrue "$FALSE"; then echo "not OK"; else echo "OK"; fi
 if isTrue "$FALSE" && isNotTrue "$TRUE"; then echo "not OK"; else echo "OK"; fi
+
 if isTrue "$TRUE" || isNotTrue "$FALSE"; then echo "OK"; else echo "not OK"; fi
 if isTrue "$TRUE" || isNotTrue "$TRUE"; then echo "OK"; else echo "not OK"; fi
 if isTrue "$FALSE" || isNotTrue "$FALSE"; then echo "OK"; else echo "not OK"; fi
